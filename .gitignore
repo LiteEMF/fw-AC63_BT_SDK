@@ -56,3 +56,10 @@ filenametags
 cscope.out
 *.bc
 *.ufw
+
+#add for build
+cpu/**/tools/*
+apps/**/board/**/*.bat
+*.layout
+*.depend
+*.used

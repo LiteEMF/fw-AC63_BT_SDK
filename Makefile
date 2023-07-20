@@ -25,13 +25,25 @@
 # make ac637n_spp_and_le
 # make ac636n_spp_and_le
 
-.PHONY: all clean ac632n_hid ac631n_hid ac638n_hid ac635n_hid ac637n_hid ac636n_hid ac632n_mesh ac631n_mesh ac638n_mesh ac635n_mesh ac637n_mesh ac636n_mesh ac632n_spp_and_le ac631n_spp_and_le ac638n_spp_and_le ac635n_spp_and_le ac637n_spp_and_le ac636n_spp_and_le clean_ac632n_hid clean_ac631n_hid clean_ac638n_hid clean_ac635n_hid clean_ac637n_hid clean_ac636n_hid clean_ac632n_mesh clean_ac631n_mesh clean_ac638n_mesh clean_ac635n_mesh clean_ac637n_mesh clean_ac636n_mesh clean_ac632n_spp_and_le clean_ac631n_spp_and_le clean_ac638n_spp_and_le clean_ac635n_spp_and_le clean_ac637n_spp_and_le clean_ac636n_spp_and_le
+.PHONY: all clean ac632n_LiteEMF ac635n_LiteEMF clean_ac632n_LiteEMF clean_ac635n_LiteEMF ac632n_hid ac631n_hid ac638n_hid ac635n_hid ac637n_hid ac636n_hid ac632n_mesh ac631n_mesh ac638n_mesh ac635n_mesh ac637n_mesh ac636n_mesh ac632n_spp_and_le ac631n_spp_and_le ac638n_spp_and_le ac635n_spp_and_le ac637n_spp_and_le ac636n_spp_and_le clean_ac632n_hid clean_ac631n_hid clean_ac638n_hid clean_ac635n_hid clean_ac637n_hid clean_ac636n_hid clean_ac632n_mesh clean_ac631n_mesh clean_ac638n_mesh clean_ac635n_mesh clean_ac637n_mesh clean_ac636n_mesh clean_ac632n_spp_and_le clean_ac631n_spp_and_le clean_ac638n_spp_and_le clean_ac635n_spp_and_le clean_ac637n_spp_and_le clean_ac636n_spp_and_le
 
-all: ac632n_hid ac631n_hid ac638n_hid ac635n_hid ac637n_hid ac636n_hid ac632n_mesh ac631n_mesh ac638n_mesh ac635n_mesh ac637n_mesh ac636n_mesh ac632n_spp_and_le ac631n_spp_and_le ac638n_spp_and_le ac635n_spp_and_le ac637n_spp_and_le ac636n_spp_and_le
+all: ac632n_LiteEMF ac635n_LiteEMF ac632n_hid ac631n_hid ac638n_hid ac635n_hid ac637n_hid ac636n_hid ac632n_mesh ac631n_mesh ac638n_mesh ac635n_mesh ac637n_mesh ac636n_mesh ac632n_spp_and_le ac631n_spp_and_le ac638n_spp_and_le ac635n_spp_and_le ac637n_spp_and_le ac636n_spp_and_le
 	@echo +ALL DONE
 
-clean: clean_ac632n_hid clean_ac631n_hid clean_ac638n_hid clean_ac635n_hid clean_ac637n_hid clean_ac636n_hid clean_ac632n_mesh clean_ac631n_mesh clean_ac638n_mesh clean_ac635n_mesh clean_ac637n_mesh clean_ac636n_mesh clean_ac632n_spp_and_le clean_ac631n_spp_and_le clean_ac638n_spp_and_le clean_ac635n_spp_and_le clean_ac637n_spp_and_le clean_ac636n_spp_and_le
+clean: clean_ac632n_LiteEMF clean_ac635n_LiteEMF clean_ac632n_hid clean_ac631n_hid clean_ac638n_hid clean_ac635n_hid clean_ac637n_hid clean_ac636n_hid clean_ac632n_mesh clean_ac631n_mesh clean_ac638n_mesh clean_ac635n_mesh clean_ac637n_mesh clean_ac636n_mesh clean_ac632n_spp_and_le clean_ac631n_spp_and_le clean_ac638n_spp_and_le clean_ac635n_spp_and_le clean_ac637n_spp_and_le clean_ac636n_spp_and_le
 	@echo +CLEAN DONE
+
+ac632n_LiteEMF:
+	$(MAKE) -C apps/hid/board/bd19 -f Makefile_LiteEMF
+
+clean_ac632n_LiteEMF:
+	$(MAKE) -C apps/hid/board/bd19 -f Makefile_LiteEMF clean
+
+ac635n_LiteEMF:
+	$(MAKE) -C apps/hid/board/bd19 -f Makefile_LiteEMF
+
+clean_ac635n_LiteEMF:
+	$(MAKE) -C apps/hid/board/bd19 -f Makefile_LiteEMF clean
 
 ac632n_hid:
 	$(MAKE) -C apps/hid/board/bd19 -f Makefile

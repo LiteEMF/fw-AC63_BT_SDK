@@ -25,6 +25,46 @@
             "group": "build"
         }
         ,{
+            "label": "ac632n_LiteEMF",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat ac632n_LiteEMF"
+            },
+            "command": "make ac632n_LiteEMF -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "clean_ac632n_LiteEMF",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat clean_ac632n_LiteEMF"
+            },
+            "command": "make clean_ac632n_LiteEMF -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "ac635n_LiteEMF",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat ac635n_LiteEMF"
+            },
+            "command": "make ac635n_LiteEMF -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
+            "label": "clean_ac635n_LiteEMF",
+            "type": "shell",
+            "windows": {
+                "command": ".vscode/winmk.bat clean_ac635n_LiteEMF"
+            },
+            "command": "make clean_ac635n_LiteEMF -j`nproc`",
+            "problemMatcher": [],
+            "group": "build"
+        }
+        ,{
             "label": "ac632n_hid",
             "type": "shell",
             "windows": {
