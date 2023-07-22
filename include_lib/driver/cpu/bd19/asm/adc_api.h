@@ -82,4 +82,6 @@ u32 adc_get_voltage(u32 ch);
 u32 adc_check_vbat_lowpower();
 
 u32 adc_sample(u32 ch);
+
+u32 adc_value_to_voltage(u32 adc_vbg, u32 adc_ch_val);
 #endif

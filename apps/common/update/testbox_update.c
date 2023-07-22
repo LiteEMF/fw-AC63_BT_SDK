@@ -165,8 +165,10 @@ static void testbox_ble_update_state_cbk(int type, u32 state, void *priv)
 
                 ble_update_ready_jump_flag = 1;
                 /* ble_app_disconnect(); */
+                #if TCFG_USER_BLE_ENABLE
                 extern void ble_module_enable(u8 en);
                 ble_module_enable(0);
+                #endif
                 u8 cnt = 0;
                 while (!check_le_conn_disconnet_flag()) {
                     log_info("wait discon\n");
@@ -185,8 +187,10 @@ static void testbox_ble_update_state_cbk(int type, u32 state, void *priv)
 #if TCFG_USER_BLE_ENABLE && (TCFG_BLE_DEMO_SELECT != DEF_BLE_DEMO_NULL) \
         &&(TCFG_BLE_DEMO_SELECT != DEF_BLE_DEMO_ADV || defined(CONFIG_MESH_CASE_ENABLE))\
 		&& (TCFG_BLE_DEMO_SELECT != DEF_BLE_DEMO_CLIENT)
+                #if TCFG_USER_BLE_ENABLE
                 extern void ble_module_enable(u8 en);
                 ble_module_enable(0);
+                #endif
                 u8 cnt = 0;
                 while (!check_le_conn_disconnet_flag()) {
                     log_info("wait discon\n");

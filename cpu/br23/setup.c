@@ -268,6 +268,7 @@ void setup_arch()
     reset_source_dump();
 
     power_reset_src = power_reset_source_dump();
+    printf("power_reset_src: 0x%x", power_reset_src);
 
     //Register debugger interrupt
     request_irq(0, 2, exception_irq_handler, 0);

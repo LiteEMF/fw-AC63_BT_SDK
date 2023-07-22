@@ -17,7 +17,7 @@ struct iic_iomapping {
     u8 sda;
 };
 
-static const struct iic_iomapping hwiic_iomap[IIC_HW_NUM][IIC_PORT_GROUP_NUM] = {
+const struct iic_iomapping hwiic_iomap[IIC_HW_NUM][IIC_PORT_GROUP_NUM] = {
     {
         {IO_PORT_DP, IO_PORT_DM},    //group a
         {IO_PORTC_04, IO_PORTC_05},  //group b

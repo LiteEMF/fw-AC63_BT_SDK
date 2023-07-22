@@ -12,7 +12,7 @@
 
 #ifndef _hal_usbd_h
 #define _hal_usbd_h
-#include "utils/emf_typedef.h" 
+#include "emf_typedef.h" 
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,6 +23,17 @@ extern "C" {
 ** Defined
 *******************************************************************************************************/
 
+#if defined CONFIG_CPU_BD19
+#ifndef USBD_NUM
+#define USBD_NUM				2
+#endif		
+
+#else
+
+#ifndef USBD_NUM
+#define USBD_NUM				1
+#endif		
+#endif
 
 
 /******************************************************************************************************

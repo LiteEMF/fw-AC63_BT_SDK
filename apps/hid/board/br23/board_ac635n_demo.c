@@ -15,6 +15,11 @@
 #include "media/includes.h"
 #endif/*CONFIG_LITE_AUDIO*/
 
+#ifdef LITEEMF_ENABLED
+#include "app/emf.h"
+#include "api/api_log.h"
+#endif
+
 #define LOG_TAG_CONST       BOARD
 #define LOG_TAG             "[BOARD]"
 #define LOG_ERROR_ENABLE
@@ -369,6 +374,17 @@ struct adc_platform_data adc_data = {
 #endif
 
 /************************** PWR config ****************************/
+
+#ifdef KEY_POWER_GPIO
+struct port_wakeup port0 = {
+	.pullup_down_enable = (POWER_KEY_PULL == PIN_PULLNONE)? DISABLE: ENABLE,                            //配置I/O 内部上下拉是否使能
+	.edge               = POWER_KEY_ACTIVE? FALLING_EDGE:RISING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
+	.attribute          = BLUETOOTH_RESUME,                  //保留参数
+    .iomap              = KEY_POWER_GPIO,         //唤醒口选择
+    .filter_enable      = ENABLE,
+};
+#else
+
 struct port_wakeup port0 = {
 	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
 	.edge               = FALLING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
@@ -381,6 +397,19 @@ struct port_wakeup port0 = {
 #endif
     .filter_enable      = ENABLE,
 };
+#endif
+
+//-----------------------------------------------
+#if defined KEY_USB_DET_GPIO              //适配外部充电
+static struct port_wakeup usbdet_port = {
+	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
+	.edge               = RISING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
+	.attribute          = BLUETOOTH_RESUME,                  //保留参数
+	.iomap              = KEY_USB_DET_GPIO,                                 //唤醒口选择
+    .filter_enable      = ENABLE,
+};
+#endif
+
 
 const struct sub_wakeup sub_wkup = {
 	.attribute  = BLUETOOTH_RESUME,
@@ -391,8 +420,11 @@ const struct charge_wakeup charge_wkup = {
 };
 
 const struct wakeup_param wk_param = {
-#if TCFG_ADKEY_ENABLE || TCFG_IOKEY_ENABLE
+#if TCFG_ADKEY_ENABLE || TCFG_IOKEY_ENABLE || (defined KEY_POWER_GPIO && (PIN_NULL != KEY_POWER_GPIO))
 	.port[1] = &port0,
+#endif
+#if defined KEY_USB_DET_GPIO
+    .port[2] = &usbdet_port,
 #endif
 	.sub = &sub_wkup,
 	.charge = &charge_wkup,
@@ -560,7 +592,9 @@ void board_set_soft_poweroff(void)
     gpio_set_die(IO_PORT_DM, 0);
     gpio_set_dieh(IO_PORT_DM, 0);
 
-
+    #if defined LITEEMF_ENABLED && API_PM_ENABLE 
+    api_weakup_init();
+    #endif
 
 	/* dac_power_off(); */
 }

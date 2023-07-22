@@ -4,7 +4,7 @@
 #include "asm/clock.h"
 #include "asm/cpu.h"
 
-#if 0
+#if 1
 /*
     [[  注意!!!  ]]
     * 适用于带cfg_done的硬件IIC，另一种硬件IIC另作说明

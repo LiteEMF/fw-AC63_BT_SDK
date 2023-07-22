@@ -595,7 +595,7 @@ static void charge_config(void)
     CHARGE_FULL_V_SEL(charge_full_v_val);
     CHARGE_FULL_mA_SEL(__this->data->charge_full_mA);
     /* CHARGE_mA_SEL(__this->data->charge_mA); */
-    CHARGE_mA_SEL(CHARGE_mA_20);
+    CHARGE_mA_SEL(TCFG_CHARGE_MA);
 }
 
 int charge_init(const struct dev_node *node, void *arg)

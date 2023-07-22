@@ -23,7 +23,9 @@
 //*********************************************************************************//
 #define TCFG_UART0_ENABLE					ENABLE_THIS_MOUDLE                     //串口打印模块使能
 #define TCFG_UART0_RX_PORT					NO_CONFIG_PORT                         //串口接收脚配置（用于打印可以选择NO_CONFIG_PORT）
+#ifndef TCFG_UART0_TX_PORT
 #define TCFG_UART0_TX_PORT  				IO_PORTA_00                            //串口发送脚配置
+#endif
 #define TCFG_UART0_BAUDRATE  				1000000                                //串口波特率配置
 
 //*********************************************************************************//
@@ -34,8 +36,9 @@
 #define TCFG_HID_HOST_ENABLE                DISABLE_THIS_MOUDLE//ENABLE_THIS_MOUDLE  //游戏盒子模式
 #define TCFG_ADB_ENABLE                     DISABLE_THIS_MOUDLE//ENABLE_THIS_MOUDLE
 #define TCFG_AOA_ENABLE                     DISABLE_THIS_MOUDLE//ENABLE_THIS_MOUDLE
-
+#ifndef TCFG_OTG_USB_DEV_EN
 #define TCFG_OTG_USB_DEV_EN                 (BIT(0) | BIT(1))//USB0 = BIT(0)  USB1 = BIT(1)
+#endif
 //*********************************************************************************//
 //                                 IIC配置                                        //
 //*********************************************************************************//
@@ -107,7 +110,9 @@
 //*********************************************************************************//
 //                                 adkey 配置                                      //
 //*********************************************************************************//
+#ifndef TCFG_ADKEY_ENABLE
 #define TCFG_ADKEY_ENABLE                   ENABLE_THIS_MOUDLE //是否使能AD按键
+#endif
 #define TCFG_ADKEY_PORT                     IO_PORTB_01         //AD按键端口(需要注意选择的IO口是否支持AD功能)
 /*AD通道选择，需要和AD按键的端口相对应:
     AD_CH_PA1    AD_CH_PA3    AD_CH_PA4    AD_CH_PA5
@@ -223,9 +228,13 @@
 //                                  充电参数配置                                   //
 //*********************************************************************************//
 //是否支持芯片内置充电
+#ifndef TCFG_CHARGE_ENABLE
 #define TCFG_CHARGE_ENABLE					DISABLE_THIS_MOUDLE
+#endif
 //是否支持开机充电
+#ifndef TCFG_CHARGE_POWERON_ENABLE
 #define TCFG_CHARGE_POWERON_ENABLE			DISABLE
+#endif
 //是否支持拔出充电自动开机功能
 #define TCFG_CHARGE_OFF_POWERON_NE			DISABLE
 //是否支持lighting握手协议
@@ -239,13 +248,17 @@
     CHARGE_FULL_V_4308  CHARGE_FULL_V_4349  CHARGE_FULL_V_4391  CHARGE_FULL_V_4434
     CHARGE_FULL_V_4472  CHARGE_FULL_V_4517  CHARGE_FULL_V_4564  CHARGE_FULL_V_4611
 */
+#ifndef TCFG_CHARGE_FULL_V
 #define TCFG_CHARGE_FULL_V					CHARGE_FULL_V_4222
+#endif
 /*
 充电截止电流可选配置：
     CHARGE_FULL_mA_2	CHARGE_FULL_mA_5	CHARGE_FULL_mA_7	 CHARGE_FULL_mA_10
     CHARGE_FULL_mA_15	CHARGE_FULL_mA_20	CHARGE_FULL_mA_25	 CHARGE_FULL_mA_30
 */
+#ifndef TCFG_CHARGE_FULL_MA
 #define TCFG_CHARGE_FULL_MA					CHARGE_FULL_mA_10
+#endif
 /*
 充电电流可选配置：
     CHARGE_mA_20		CHARGE_mA_30		CHARGE_mA_40		CHARGE_mA_50
@@ -253,8 +266,9 @@
     CHARGE_mA_100		CHARGE_mA_110		CHARGE_mA_120		CHARGE_mA_140
     CHARGE_mA_160		CHARGE_mA_180		CHARGE_mA_200		CHARGE_mA_220
  */
+#ifndef TCFG_CHARGE_MA
 #define TCFG_CHARGE_MA						CHARGE_mA_50
-
+#endif
 //*********************************************************************************//
 //                                  LED 配置                                       //
 //*********************************************************************************//
@@ -275,9 +289,13 @@
 //                                  低功耗配置                                     //
 //*********************************************************************************//
 //#define TCFG_LOWPOWER_POWER_SEL				PWR_DCDC15
+#ifndef TCFG_LOWPOWER_POWER_SEL
 #define TCFG_LOWPOWER_POWER_SEL				PWR_LDO15                    //电源模式设置，可选DCDC和LDO
+#endif
 #define TCFG_LOWPOWER_BTOSC_DISABLE			0                            //低功耗模式下BTOSC是否保持
+#ifndef TCFG_LOWPOWER_LOWPOWER_SEL
 #define TCFG_LOWPOWER_LOWPOWER_SEL			SLEEP_EN                     //SNIFF状态下芯片是否进入powerdown
+#endif
 /*强VDDIO等级配置,可选：
     VDDIOM_VOL_20V    VDDIOM_VOL_22V    VDDIOM_VOL_24V    VDDIOM_VOL_26V
     VDDIOM_VOL_30V    VDDIOM_VOL_30V    VDDIOM_VOL_32V    VDDIOM_VOL_36V*/
@@ -314,8 +332,12 @@
 //                                  蓝牙配置                                       //
 //*********************************************************************************//
 #define TCFG_USER_TWS_ENABLE                      0   //tws功能使能
+#ifndef TCFG_USER_BLE_ENABLE
 #define TCFG_USER_BLE_ENABLE                      1   //BLE功能使能,---使能后,请配置TCFG_BLE_DEMO_SELECT选择DEMO例子
+#endif
+#ifndef TCFG_USER_EDR_ENABLE
 #define TCFG_USER_EDR_ENABLE                      1   //EDR功能使能
+#endif
 
 #if TCFG_USER_EDR_ENABLE
 #define USER_SUPPORT_PROFILE_SPP    0

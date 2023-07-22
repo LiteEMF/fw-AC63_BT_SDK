@@ -343,9 +343,9 @@ LITEEMF_INCLUDES = \
 SRC_DIRS := app api utils
 
 # 定义源文件变量
-LITEEMF_SRC := $(shell find $(addprefix $(LITEEMF_DIR)/, $(SRC_DIRS)) -type f -name "*.c")
-LITEEMF_HAL_SRC := $(shell find user/emf_ac63_hal/ -type f -name "*.c")
-PROJECT_SRC := $(shell find user/project/ -type f -name "*.c")
+LITEEMF_SRC := $(foreach dir,$(addprefix $(LITEEMF_DIR)/,$(SRC_DIRS)),$(wildcard $(dir)/**/*.c))
+LITEEMF_HAL_SRC := $(wildcard ../../../../user/emf_ac63_hal/**/*.c)
+PROJECT_SRC := $(wildcard ../../../../user/project/**/*.c)
 c_SRC_FILES += $(LITEEMF_SRC)
 c_SRC_FILES += $(LITEEMF_HAL_SRC)
 c_SRC_FILES += $(PROJECT_SRC)

@@ -48,12 +48,13 @@
                 "USB_PC_NO_APP_MODE",
                 "__LD__",
                 "__Q32S__",
-                "LITEEMF_ENABLED"
+                "LITEEMF_ENABLED",
+                "sec(n)="
             ],
             "includePath": [
-                "${workspaceFolder}/sdk/user/emf_ac63_hal/",
-                "${workspaceFolder}/sdk/user/",
-                "${workspaceFolder}/sdk/user/**",
+                "${workspaceFolder}/user/emf_ac63_hal/",
+                "${workspaceFolder}/user/",
+                "${workspaceFolder}/user/**",
                 "${workspaceFolder}/include_lib",
                 "${workspaceFolder}/include_lib/driver",
                 "${workspaceFolder}/include_lib/driver/device",
@@ -152,12 +153,13 @@
                 "USB_PC_NO_APP_MODE",
                 "__LD__",
                 "__PI32V2__",
-                "LITEEMF_ENABLED"
+                "LITEEMF_ENABLED",
+                "sec(n)="
             ],
             "includePath": [
-                "${workspaceFolder}/sdk/user/emf_ac63_hal/",
-                "${workspaceFolder}/sdk/user/",
-                "${workspaceFolder}/sdk/user/**",
+                "${workspaceFolder}/user/emf_ac63_hal/",
+                "${workspaceFolder}/user/",
+                "${workspaceFolder}/user/**",
                 "${workspaceFolder}/include_lib",
                 "${workspaceFolder}/include_lib/driver",
                 "${workspaceFolder}/include_lib/driver/device",

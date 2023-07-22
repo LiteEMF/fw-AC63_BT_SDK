@@ -11,6 +11,11 @@
 #include "SYD9557M.h"
 #include "usb/otg.h"
 
+#ifdef LITEEMF_ENABLED
+#include "app/emf.h"
+#include "api/api_log.h"
+#endif
+
 #define LOG_TAG_CONST       BOARD
 #define LOG_TAG             "[BOARD]"
 #define LOG_ERROR_ENABLE
@@ -224,6 +229,17 @@ void board_init()
 
 //static u32 key_row[] = {IO_PORTB_06, IO_PORTB_07, IO_PORTB_08, IO_PORTB_09, IO_PORTB_10, IO_PORTB_11, IO_PORTC_06, IO_PORTC_07};
 /************************** PWR config ****************************/
+
+
+#ifdef KEY_POWER_GPIO
+struct port_wakeup port0 = {
+	.pullup_down_enable = (POWER_KEY_PULL == PIN_PULLNONE)? DISABLE: ENABLE,                            //配置I/O 内部上下拉是否使能
+	.edge               = POWER_KEY_ACTIVE? FALLING_EDGE:RISING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
+	.attribute          = BLUETOOTH_RESUME,                  //保留参数
+    .iomap              = KEY_POWER_GPIO,         //唤醒口选择
+    .filter_enable      = ENABLE,
+};
+#else
 struct port_wakeup port0 = {
 	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
 	.edge               = RISING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
@@ -231,6 +247,7 @@ struct port_wakeup port0 = {
 	.iomap              = IO_PORTB_09,                       //唤醒口选择
     .filter_enable      = ENABLE,
 };
+#endif
 
 struct port_wakeup port1 = {
 	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
@@ -288,6 +305,18 @@ struct port_wakeup port7 = {
     .filter_enable      = ENABLE,
 };
 
+
+//-----------------------------------------------
+#if defined KEY_USB_DET_GPIO              //适配外部充电
+static struct port_wakeup usbdet_port = {
+	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
+	.edge               = RISING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
+	.attribute          = BLUETOOTH_RESUME,                  //保留参数
+	.iomap              = KEY_USB_DET_GPIO,                                 //唤醒口选择
+    .filter_enable      = ENABLE,
+};
+#endif
+
 const struct sub_wakeup sub_wkup = {
 	.attribute  = BLUETOOTH_RESUME,
 };
@@ -297,6 +326,17 @@ const struct charge_wakeup charge_wkup = {
 };
 
 const struct wakeup_param wk_param = {
+
+    #ifdef LITEEMF_ENABLED
+    #if defined KEY_POWER_GPIO && (PIN_NULL != KEY_POWER_GPIO)
+    .port[1] = &port0,
+    #endif
+    #if defined KEY_USB_DET_GPIO
+    .port[2] = &usbdet_port,
+    #endif
+
+    #else
+
     .port[0] = &port0,
 	.port[1] = &port1,
 	.port[2] = &port2,
@@ -305,6 +345,8 @@ const struct wakeup_param wk_param = {
 	.port[5] = &port5,
 	.port[6] = &port6,
 	.port[7] = &port7,
+    #endif
+
 	.sub = &sub_wkup,
 	.charge = &charge_wkup,
 };
@@ -356,7 +398,9 @@ void board_set_soft_poweroff(void)
     gpio_set_die(IO_PORT_DM, 0);
     gpio_set_dieh(IO_PORT_DM, 0);
 
-
+    #if defined LITEEMF_ENABLED && API_PM_ENABLE 
+    api_weakup_init();
+    #endif
 
     sdpg_config(0);
 

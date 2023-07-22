@@ -16,6 +16,7 @@
 #define ACTION_REMOTE_CONTROL       0x0009
 #define ACTION_ELECTROCAR           0x000a
 
+#define ACTION_LITEEMF_MAIN    	    0x000f
 #endif
 
 

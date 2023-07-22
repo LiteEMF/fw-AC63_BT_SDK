@@ -242,7 +242,9 @@ void mcpwm_init(struct pwm_platform_data *arg)
     //set mctimer frequency
     mcpwm_set_frequency(arg->pwm_ch_num, arg->pwm_aligned_mode, arg->frequency);
 
-    pwm_reg->ch_con0 = 0;
+    pwm_reg->ch_con0 &= (BIT(2))|(BIT(3));
+    /* 即占空比 在 MCTMR_CNT等于 “0”或者等于MCTMR_OVF时 载入 */
+    pwm_reg->ch_con0 |= BIT(1); //解决PWM, cnt从1->0会出现几十微秒高电平的问题
 
     if (arg->complementary_en) {            //是否互补
         pwm_reg->ch_con0 &= ~(BIT(5) | BIT(4));
@@ -251,9 +253,9 @@ void mcpwm_init(struct pwm_platform_data *arg)
         pwm_reg->ch_con0 &= ~(BIT(5) | BIT(4));
     }
 
-    mcpwm_open(arg->pwm_ch_num); 	 //mcpwm enable
     //set duty
     mcpwm_set_duty(arg->pwm_ch_num, arg->duty);
+    mcpwm_open(arg->pwm_ch_num); 	 //mcpwm enable
 
     //H:
     if (arg->h_pin < IO_MAX_NUM) {      //任意引脚

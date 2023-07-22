@@ -123,7 +123,7 @@ void mcpwm_set_frequency(pwm_timer_num_type ch, pwm_aligned_mode_type align, u32
         }
     }
 
-    reg->tmr_con |= (i << 3); //div 2^i
+    reg->tmr_con |= (i << 4); //div 2^i
 
     mcpwm_div_clk = clk / _pow(2, i);
 
@@ -263,20 +263,22 @@ void mcpwm_init(struct pwm_platform_data *arg)
         return;
     }
 
-    pwm_reg->ch_con0 = 0;
+    pwm_reg->ch_con0 &= (BIT(2))|(BIT(3));
+    /* 即占空比 在 MCTMR_CNT等于 “0”或者等于MCTMR_OVF时 载入 */
+    pwm_reg->ch_con0 |= BIT(1); //解决PWM, cnt从1->0会出现几十微秒高电平的问题
 
     //H:
     if (arg->h_pin == pwm_hw_h_pin[arg->pwm_ch_num]) {    //硬件引脚
         pwm_reg->ch_con0 |= BIT(2); //H_EN
         gpio_set_direction(arg->h_pin, 0); //DIR output
     } else {
-        pwm_reg->ch_con0 &= ~BIT(2); //H_DISABLE
         if (arg->h_pin < IO_MAX_NUM) {    //任意引脚
             //TODO: output_channle
             if (arg->pwm_ch_num >= pwm_ch3) {
                 printf("error: mcpwm ch %d not support output_channel", arg->pwm_ch_num);
                 goto _CH_L_SET;
             }
+            pwm_reg->ch_con0 &= ~BIT(2); //H_DISABLE 解决PB10, PB9不能同时使用的问题
             h_output_channel = 1;
             /* gpio_output_channle(arg->h_pin, CHx_CHx_PWM_H[arg->h_pin_output_ch_num][arg->pwm_ch_num]); */
             use_output_ch_flag = 1;
@@ -289,13 +291,13 @@ _CH_L_SET:
         pwm_reg->ch_con0 |= BIT(3); //L_EN
         gpio_set_direction(arg->l_pin, 0); //DIR output
     } else {
-        pwm_reg->ch_con0 &= ~BIT(3); //L_DISABLE
         if (arg->l_pin < IO_MAX_NUM) {    //任意引脚
             //TODO:
             if (arg->pwm_ch_num >= pwm_ch3) {
                 printf("error: mcpwm ch %d not support output_channel", arg->pwm_ch_num);
                 goto _PWM_OPEN;
             }
+            pwm_reg->ch_con0 &= ~BIT(3); //L_DISABLE
             if ((use_output_ch_flag == 1) && (arg->h_pin_output_ch_num == arg->l_pin_output_ch_num)) {
                 arg->l_pin_output_ch_num ++;
                 if (arg->l_pin_output_ch_num > 2) {
@@ -315,6 +317,8 @@ _CH_L_SET:
     }
 
 _PWM_OPEN:
+    //set duty
+    mcpwm_set_duty(arg->pwm_ch_num, arg->pwm_timer_num, arg->duty);
     mcpwm_open(arg->pwm_ch_num, arg->pwm_timer_num); 	 //mcpwm enable
     if (h_output_channel) {
         gpio_output_channle(arg->h_pin, CHx_CHx_PWM_H[arg->h_pin_output_ch_num][arg->pwm_ch_num]);
@@ -322,8 +326,6 @@ _PWM_OPEN:
     if (l_output_channel) {
         gpio_output_channle(arg->l_pin, CHx_CHx_PWM_L[arg->l_pin_output_ch_num][arg->pwm_ch_num]);
     }
-    //set duty
-    mcpwm_set_duty(arg->pwm_ch_num, arg->pwm_timer_num, arg->duty);
 
     /* log_pwm_info(arg->pwm_ch_num, arg->pwm_timer_num); */
 }

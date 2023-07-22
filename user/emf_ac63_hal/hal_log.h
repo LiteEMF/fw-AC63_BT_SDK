@@ -11,7 +11,11 @@
 
 #ifndef _hal_log_h
 #define _hal_log_h
-#include "utils/emf_typedef.h" 
+#include "emf_typedef.h" 
+#include "printf.h"
+#include "asm/uart_dev.h"
+#include "asm/debug.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,10 +25,8 @@ extern "C" {
 /******************************************************************************************************
 ** Defined
 *******************************************************************************************************/
-
-
 #define HAL_PRINTF				printf
-
+#define UART_DEBUG_ID			ID_NULL
 
 /******************************************************************************************************
 **	Parameters

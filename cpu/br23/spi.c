@@ -49,7 +49,7 @@
 #define SPI2_ENABLE   1   //是否使能SPI2，使能后需定义spi2_p_data
 
 
-static const struct spi_io_mapping spi_io_map[SPI_MAX_HW_NUM] = {
+const struct spi_io_mapping spi_io_map[SPI_MAX_HW_NUM] = {
     //SPI0
     {
         .num = 4,

@@ -574,7 +574,9 @@ int usb_audio_mic_open(void *_info)
 #if TCFG_MIC_EFFECT_ENABLE
     app_var.usb_mic_gain = mic_effect_get_micgain();
 #else
+    #if TCFG_AUDIO_ENABLE
     app_var.usb_mic_gain = uac_mic_vol_switch(uac_get_mic_vol(0));
+    #endif
 #endif//TCFG_MIC_EFFECT_ENABLE
 
 #if TCFG_IIS_INPUT_EN

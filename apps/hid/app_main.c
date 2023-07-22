@@ -172,7 +172,9 @@ void app_main()
 #elif(CONFIG_APP_IDLE)
     it.name = "idle";
     it.action = ACTION_IDLE_MAIN;
-
+#elif(CONFIG_APP_LITEEMF)
+    it.name = "app_liteemf";
+    it.action = ACTION_LITEEMF_MAIN;
 #else
     while (1) {
         printf("no app!!!");

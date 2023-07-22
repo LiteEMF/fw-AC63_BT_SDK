@@ -116,6 +116,7 @@ void app_bank_init()
 #endif
 }
 
+u32 power_reset_src = 0;
 static void (*uart_db_irq_handler_callback)(u8 *packet, u32 size);
 extern void uart_dev_set_irq_handler_hook(void *uart_irq_hook);
 static void uart_db_irq_handler_hook(u8 *rbuf, u32 len)
@@ -194,8 +195,8 @@ void setup_arch()
 
     efuse_dump();
 
-    reset_source_dump();
-
+    power_reset_src = reset_source_dump();
+	printf("power_reset_src: 0x%x", power_reset_src);
     /* power_reset_source_dump(); */
 
     //Register debugger interrupt

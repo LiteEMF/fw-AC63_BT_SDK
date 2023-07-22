@@ -12,7 +12,7 @@
 
 #ifndef _hal_usbh_h
 #define _hal_usbh_h
-#include "utils/emf_typedef.h" 
+#include "emf_typedef.h" 
 
 #ifdef __cplusplus
 extern "C" {
@@ -22,8 +22,19 @@ extern "C" {
 /******************************************************************************************************
 ** Defined
 *******************************************************************************************************/
+#define USBH_LOOP_ENABLE		0
 
+#if defined CONFIG_CPU_BD19	
+#ifndef USBH_NUM
+#define USBH_NUM				2
+#endif
 
+#else
+
+#ifndef USBH_NUM
+#define USBH_NUM				1
+#endif
+#endif
 
 /******************************************************************************************************
 **	Parameters

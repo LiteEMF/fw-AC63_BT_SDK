@@ -5,6 +5,7 @@
 #include "generic/list.h"
 #include "generic/rect.h"
 
+#ifndef LITEEMF_ENABLED
 #define     KEY_POWER_START     0
 #define     KEY_POWER           1
 #define     KEY_PREV            2
@@ -38,6 +39,7 @@
 
 
 #define 	KEY_F1 				60
+#endif
 
 
 #define SYS_ALL_EVENT           0xffff

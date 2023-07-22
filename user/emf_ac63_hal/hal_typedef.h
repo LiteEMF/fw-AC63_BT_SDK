@@ -16,7 +16,13 @@
 extern "C" {
 #endif
 
+#include "typedef.h"
+#include "generic/list.h"
 
+#define __STDBOOL_H         //杰里不调用stdbool
+#define	_STDIO_H_			//杰里不调用stdbio
+
+typedef struct list_head list_head_t;
 
 #ifdef __cplusplus
 }

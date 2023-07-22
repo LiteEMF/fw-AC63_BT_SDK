@@ -582,7 +582,9 @@ static int uac_audio_start(void)
     // 设置音量
     audio_output_set_start_volume(APP_AUDIO_STATE_MUSIC);
     u16 l_volume, r_volume;
+    #if TCFG_AUDIO_ENABLE
     uac_get_cur_vol(0, &l_volume, &r_volume);
+    #endif
     u8 vol = uac_vol_switch(l_volume);
     app_audio_set_volume(APP_AUDIO_STATE_MUSIC, vol, 0);
 #if (TCFG_DEC2TWS_ENABLE)

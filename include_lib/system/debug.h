@@ -34,9 +34,12 @@ void printf_buf(u8 *buf, u32 len);
 #define LOG_ERROR       e
 #define LOG_CHAR        c
 
+#ifndef _STR
 #define _STR(x)     #x
+#endif
+#ifndef STR
 #define STR(x)     "["_STR(x)"]"
-
+#endif
 
 #define _LOG_TAG_CONST_DECLARE(level, name)         extern const char log_tag_const_##level##_##name
 #define LOG_TAG_CONST_DECLARE(level, name)          _LOG_TAG_CONST_DECLARE(level, name)

@@ -49,20 +49,20 @@ BT_CONFIG bt_cfg = {
 
 static const char edr_ext_name[] = " 3.0";
 
+#if TCFG_AUDIO_ENABLE
 u8 get_max_sys_vol(void)
 {
 #if TCFG_APP_FM_EMITTER_EN
     return FM_EMITTER_MAX_VOL;
 #else
     //return (audio_cfg.max_sys_vol);
-    return 15;
+    return SYS_MAX_VOL;
 #endif
 }
 
-#if 1
 u8 get_tone_vol(void)
 {
-    return 15;
+    return SYS_DEFAULT_TONE_VOL;
 #if 0
     if (!audio_cfg.tone_vol) {
         return (get_max_sys_vol());
@@ -222,8 +222,10 @@ void cfg_file_parse(u8 idx)
     /* g_printf("rf config:%d\n", app_var.rf_power); */
     log_info("rf config:%d\n", app_var.rf_power);
 
-    app_var.music_volume = 14;
-    app_var.wtone_volume = 14;
+    #ifdef SYS_DEFAULT_VOL
+    app_var.music_volume = SYS_DEFAULT_VOL;
+    app_var.wtone_volume = SYS_DEFAULT_TONE_VOL;
+    #endif
 
 #if (USE_CONFIG_CHARGE_SETTING) && (TCFG_CHARGE_ENABLE)
     /* g_printf("app charge config:\n"); */

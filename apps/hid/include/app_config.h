@@ -1,6 +1,10 @@
 #ifndef APP_CONFIG_H
 #define APP_CONFIG_H
 
+#ifdef LITEEMF_ENABLED
+#include "hw_config.h"
+#endif
+
 /*
  * 系统打印总开关
  */
@@ -16,7 +20,11 @@
 #define CONFIG_DEBUG_ENABLE
 
 //app case 选择,只选1,要配置对应的board_config.h
+#ifdef LITEEMF_ENABLED
+#define CONFIG_APP_KEYBOARD                 0//hid按键 ,default case
+#else
 #define CONFIG_APP_KEYBOARD                 1//hid按键 ,default case
+#endif
 #define CONFIG_APP_KEYFOB                   0//自拍器,  board_ac6368a,board_6318,board_6379b
 #define CONFIG_APP_MOUSE_SINGLE             0//单模切换
 #define CONFIG_APP_MOUSE_DUAL               0//同时开双模
@@ -25,9 +33,12 @@
 #define CONFIG_APP_GAMEBOX                  0//吃鸡王座
 #define CONFIG_APP_REMOTE_CONTROL           0//语音遥控
 #define CONFIG_APP_IDLE                     0//IDLE
+#ifdef LITEEMF_ENABLED
+#define CONFIG_APP_LITEEMF                  1
+#endif
 
 //edr sniff模式选择; sniff参数需要调整,移植可具体参考app_keyboard.c
-#if CONFIG_APP_MOUSE_SINGLE || CONFIG_APP_MOUSE_DUAL || CONFIG_APP_STANDARD_KEYBOARD || CONFIG_APP_REMOTE_CONTROL //|| CONFIG_APP_KEYBOARD
+#if CONFIG_APP_MOUSE_SINGLE || CONFIG_APP_MOUSE_DUAL || CONFIG_APP_STANDARD_KEYBOARD || CONFIG_APP_REMOTE_CONTROL || ACTION_LITEEMF_MAIN //|| CONFIG_APP_KEYBOARD
 #define SNIFF_MODE_RESET_ANCHOR             1//键盘鼠标sniff模式,固定小周期发包,多按键响应快
 #else
 #define SNIFF_MODE_RESET_ANCHOR             0//待机固定500ms sniff周期,待机功耗较低,按键唤醒有延时

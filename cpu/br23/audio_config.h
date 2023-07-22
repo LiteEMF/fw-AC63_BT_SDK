@@ -3,7 +3,7 @@
 
 #include "generic/typedef.h"
 #include "app_config.h"
-
+#include "asm/dac.h"
 #if(defined(CONFIG_MIXER_CYCLIC)&&(SOUNDCARD_ENABLE))
 #define AUDIO_MIXER_LEN			(128 * 2 * 2 * 6)
 #else
@@ -96,8 +96,8 @@
 #endif
 
 
-#define SYS_DEFAULT_VOL         	0  //(SYS_MAX_VOL/2)
-#define SYS_DEFAULT_TONE_VOL    	18 //(SYS_MAX_VOL)
+#define SYS_DEFAULT_VOL         	(SYS_MAX_VOL/2)  //(SYS_MAX_VOL/2)
+#define SYS_DEFAULT_TONE_VOL    	SYS_MAX_VOL //(SYS_MAX_VOL)
 #define SYS_DEFAULT_SIN_VOL     	17
 
 #define APP_AUDIO_STATE_IDLE        0
