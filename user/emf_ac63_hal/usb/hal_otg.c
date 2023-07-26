@@ -61,20 +61,19 @@ static void usb_event_handler(struct sys_event *event)
         usb_msg = (const char *)event->u.dev.value;
         usb_id = usb_msg[2] - '0';
 
-        log_debug("usb event : %d DEVICE_EVENT_FROM_OTG %s",
-                  event->u.dev.event, usb_msg);
+        logd("usb event : %d DEVICE_EVENT_FROM_OTG %s\n",event->u.dev.event, usb_msg);
 
         if (usb_msg[0] == 'h') {
             if (event->u.dev.event == DEVICE_EVENT_IN) {
-                log_info("usb %c online", usb_msg[2]);
 				#if API_USBH_BIT_ENABLE
+                usbh_init(usb_id<<4);
 				usbh_det_event(usb_id<<4, 1);
 				#endif
 
             } else if (event->u.dev.event == DEVICE_EVENT_OUT) {
-                log_info("usb %c offline", usb_msg[2]);
 				#if API_USBH_BIT_ENABLE
 				usbh_det_event(usb_id<<4, 0);
+                usbh_deinit(usb_id<<4);
 				#endif
             }
         } else if (usb_msg[0] == 's') {
@@ -91,12 +90,12 @@ static void usb_event_handler(struct sys_event *event)
         }
         break;
     case DEVICE_EVENT_FROM_USB_HOST:
-        log_debug("host_event %x", event->u.dev.event);
+        logd("host_event %x\n", event->u.dev.event);
         if ((event->u.dev.event == DEVICE_EVENT_IN) ||
             (event->u.dev.event == DEVICE_EVENT_CHANGE)) {
-             log_error("device in %x", event->u.dev.value);
+             logd("device in %x\n", event->u.dev.value);
         } else if (event->u.dev.event == DEVICE_EVENT_OUT) {
-            log_error("device out %x", event->u.dev.value);
+            logd("device out %x\n", event->u.dev.value);
         }
         break;
     }
@@ -116,6 +115,7 @@ error_t hal_otg_init(uint8_t id)
 {
 	if(!otg_regist){
 		otg_regist = true;
+        logd("register_sys_event_handler\n");
 		register_sys_event_handler(SYS_DEVICE_EVENT, 0, 2, usb_event_handler);
 	}
 	return ERROR_SUCCESS;
@@ -124,6 +124,7 @@ error_t hal_otg_deinit(uint8_t id)
 {
 	if(otg_regist){
 		otg_regist = false;
+        logd("unregister_sys_event_handler\n");
 		unregister_sys_event_handler(usb_event_handler);
 	}
 	return ERROR_SUCCESS;

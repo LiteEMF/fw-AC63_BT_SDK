@@ -15,7 +15,8 @@
 #include "server/server_core.h"
 #include "app_action.h"
 #include "app_config.h"
-#if(ACTION_LITEEMF_MAIN)
+
+#if(CONFIG_APP_LITEEMF)
 #include "system/app_core.h"
 #include "os/os_api.h"
 #include "rcsp_bluetooth.h"
@@ -38,7 +39,7 @@
 *******************************************************************************************************/
 static volatile u8 is_app_liteemf_active = 0;//1-临界点,系统不允许进入低功耗，0-系统可以进入低功耗
 
-uint8_t heartbeat_msg_cnt = 0;
+uint8_t heartbeat_msg_cnt = 1;
 /*****************************************************************************************************
 **  Function
 ******************************************************************************************************/
@@ -132,17 +133,19 @@ static void emf_task_handle(void *arg)
 extern void bt_pll_para(u32 osc, u32 sys, u8 low_power, u8 xosc);
 static void liteemf_app_start()
 {
-    log_info("=======================================");
-    log_info("-------------HID DEMO-----------------");
-    log_info("=======================================");
-    log_info("app_file: %s", __FILE__);
+    logi("=======================================");
+    logi("-------------HID DEMO-----------------");
+    logi("=======================================");
+    logi("app_file: %s", __FILE__);
 
     clk_set("sys", BT_NORMAL_HZ);
 
     emf_api_init();
     emf_init();
 
+    logd("start end\n");
     os_task_create(emf_task_handle,NULL,2,2048,512,"emf_task");
+    heartbeat_msg_cnt = 0;
 }
 
 /*******************************************************************
@@ -160,7 +163,7 @@ static int liteemf_state_machine(struct application *app, enum app_state state, 
             break;
         }
         switch (it->action) {
-        case ACTION_HID_MAIN:
+        case ACTION_LITEEMF_MAIN:
             liteemf_app_start();
             break;
         }
@@ -172,7 +175,7 @@ static int liteemf_state_machine(struct application *app, enum app_state state, 
     case APP_STA_STOP:
         break;
     case APP_STA_DESTROY:
-        log_info("APP_STA_DESTROY\n");
+        logi("APP_STA_DESTROY\n");
         break;
     }
 

@@ -72,7 +72,11 @@ struct hw_iic_config {
     u8 role;
 };
 
+#ifdef LITEEMF_ENABLED
+extern struct hw_iic_config hw_iic_cfg[];
+#else
 extern const struct hw_iic_config hw_iic_cfg[];
+#endif
 
 /*
  * @brief 初始化硬件iic

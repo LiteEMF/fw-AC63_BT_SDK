@@ -423,7 +423,7 @@ const struct wakeup_param wk_param = {
 #if TCFG_ADKEY_ENABLE || TCFG_IOKEY_ENABLE || (defined KEY_POWER_GPIO && (PIN_NULL != KEY_POWER_GPIO))
 	.port[1] = &port0,
 #endif
-#if defined KEY_USB_DET_GPIO
+#if defined KEY_USB_DET_GPIO && (PIN_NULL != KEY_USB_DET_GPIO)
     .port[2] = &usbdet_port,
 #endif
 	.sub = &sub_wkup,

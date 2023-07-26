@@ -30,8 +30,6 @@
 *******************************************************************/
 bool hal_set_sysclk(emf_clk_t clk, uint32_t freq)
 {
-	uint32_t freq;
-
 	switch(clk){
 	case SYSCLK:
 		clk_set("sys",freq);

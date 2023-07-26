@@ -34,17 +34,17 @@ extern "C" {
 			
 		// uart
 		#define TCFG_UART0_TX_PORT  				IO_PORTA_00
-		#define HW_UART_MAP {\
+		//#define HW_UART_MAP {\
 			{PA_00, PIN_NULL, 0, 0, 0, VAL2FLD(UART_BAUD,1000000)}}
 
 		//adc
-		#define HW_ADC_MAP {	\
+		//#define HW_ADC_MAP {	\
 			{PA_00,0,VAL2FLD(ADC_CH,0)},								\
 			{PA_01,0,VAL2FLD(ADC_CH,1) | VAL2FLD(ADC_PULL,1)}			\
 			}
 
 		// iic
-		#define HW_IIC_MAP {	\
+		//#define HW_IIC_MAP {	\
 			{PA_08,PA_09,PB_02,0,VAL2FLD(IIC_BADU,400000)},	\
 			}
 		// spi

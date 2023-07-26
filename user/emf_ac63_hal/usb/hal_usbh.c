@@ -58,8 +58,8 @@ static int usbh_sem_init(usb_dev usb_id)
     OS_SEM *sem = zalloc(sizeof(OS_SEM));
     ASSERT(sem, "usb alloc sem error");
     usb_host_sem[usb_id] = sem;
-    g_printf("%s %x %x ", __func__, usb_id, sem);
-    os_sem_create(usb_host_sem, 0);
+    logd_g("%s %x %x ", __func__, usb_id, sem);
+    os_sem_create(usb_host_sem[usb_id], 0);
     return 0;
 }
 
@@ -70,7 +70,7 @@ static int usbh_sem_pend(usb_dev usb_id, u32 timeout)
     }
     int ret = os_sem_pend(usb_host_sem[usb_id], timeout);
     if (ret) {
-        r_printf("%s %d ", __func__, ret);
+        logd_r("%s %d ", __func__, ret);
     }
     return ret;
 }
@@ -82,19 +82,16 @@ static int usbh_sem_post(usb_dev usb_id)
     }
     int ret = os_sem_post(usb_host_sem[usb_id]);
     if (ret) {
-        r_printf("%s %d ", __func__, ret);
+        logd_r("%s %d ", __func__, ret);
     }
     return 0;
 }
 
 static int usbh_sem_del(usb_dev usb_id)
 {
-    r_printf("1");
     if (usb_host_sem[usb_id] == NULL) {
         return 0;
     }
-    r_printf("2");
-    r_printf("3");
 #if USB_HUB
     if (host_dev && host_ep->sem && host_dev->father == NULL) {
         os_sem_del(usb_host_sem[usb_id]);
@@ -104,14 +101,9 @@ static int usbh_sem_del(usb_dev usb_id)
         os_sem_del(usb_host_sem[usb_id], 0);
     }
 #endif
-    r_printf("4");
-    g_printf("%s %x %x ", __func__, host_dev, usb_host_sem[usb_id]);
+    logd_r("%s %x %x ", __func__, usb_id, usb_host_sem[usb_id]);
     free(usb_host_sem[usb_id]);
-    r_printf("5");
     usb_host_sem[usb_id] = NULL;
-    r_printf("6");
-    usb_host_free(usb_id);
-    r_printf("7");
     return 0;
 }
 #endif
@@ -150,13 +142,13 @@ void usb_h_isr(const usb_dev usb_id)
 
     for (int i = 1; i < USBH_ENDP_NUM; i++) {
         if (intr_tx & BIT(i)) {
-			usbh_endp_in_event(usb_id,i | TUSB_DIR_IN_MASK);
+			usbh_endp_out_event(usb_id,i);
         }
     }
 
     for (int i = 1; i < USBH_ENDP_NUM; i++) {
         if (intr_rx & BIT(i)) {
-			usbh_endp_out_event(usb_id,i);
+			usbh_endp_in_event(usb_id,i | TUSB_DIR_IN_MASK);
         }
     }
     __asm__ volatile("csync");
@@ -399,48 +391,6 @@ static int usb_control_transfers(uint8_t id, uint8_t mtu, struct ctlXfer *urb)
 **  Function
 ******************************************************************************************************/
 
-/*******************************************************************
-** Parameters:		
-** Returns:	
-** Description:		
-*******************************************************************/
-error_t hal_usbh_set_status(uint8_t id,usb_state_t usb_sta)
-{
-	const usb_dev usb_id = id>>4;
-
-	switch (usb_sta){
-	case TUSB_STA_ATTACHED:
-		break;
-	case TUSB_STA_DETACHED:
-		logd_g("usbh TUSB_STA_DETACHED\n");
-		usb_otg_resume(usb_id);  //打开usb host之后恢复otg检测
-		usb_sie_disable(usb_id);
-		#if USB_HOST_ASYNC
-		usbh_sem_del(usb_id);
-		#endif
-		break;
-	case TUSB_STA_POWERED:
-		logd_g("usbh TUSB_STA_POWERED\n");
-		#if USB_HOST_ASYNC
-		usbh_sem_init(usb_id);
-		#endif
-        usb_host_config(usb_id);
-		usb_h_isr_reg(usb_id, 1, 0);
-		break;
-	case TUSB_STA_DEFAULT:
-		break;
-	case TUSB_STA_ADDRESSING:
-		break;
-	case TUSB_STA_CONFIGURED:
-	case TUSB_STA_SUSPENDED:
-		usb_otg_resume(usb_id);  //打开usb host之后恢复otg检测
-		break;
-	default:
-		break;
-	}	
-
-	return ERROR_SUCCESS;
-}
 
 /*******************************************************************
 ** Parameters:		
@@ -502,7 +452,7 @@ error_t hal_usbh_endp_unregister(uint8_t id, usb_endp_t *endpp)
         }else{
             usb_clr_intr_rxe(usb_id,host_ep);
         }
-        usb_free_ep(usb_id,host_ep,endp_dir);
+        // usb_free_ep(usb_id,host_ep,endp_dir);
     }
 
 	return ERROR_SUCCESS;
@@ -516,12 +466,22 @@ error_t hal_usbh_endp_register(uint8_t id, usb_endp_t *endpp)
     usb_dev usb_id = id>>4;
 
 	endp_dir = endpp->dir? TUSB_DIR_IN_MASK:0;
-	if(endp_dir || endpp->type == TUSB_ENDP_TYPE_ISOCH){	//endp in and iso endp used isr
+	if(endp_dir || (endpp->type == TUSB_ENDP_TYPE_ISOCH)){	//endp in and iso endp used isr
 		isr_en = true;
 	}
 
 	u32 host_ep = usb_get_ep_num(usb_id, endp_dir, endpp->type);
-	ep_buffer = mem_buf_alloc(&usbh_mem[usb_id], endpp->mtu + 4);
+    if((u32)-1 == host_ep){
+        logd("usbh ep null!\n");
+        return ERROR_FAILE;
+    }
+    
+	ep_buffer = mem_buf_alloc(&usbh_mem[usb_id], MIN(64,endpp->mtu) + 4);
+    if(NULL == ep_buffer){
+        logd("usbh mem null!\n");
+        return ERROR_NO_MEM;
+    }
+
 	if(endp_dir){
 		m_target_ep[usb_id][host_ep][1] = endpp->addr;
 		m_ep_pbuffer[usb_id][host_ep][1] = ep_buffer;
@@ -529,11 +489,12 @@ error_t hal_usbh_endp_register(uint8_t id, usb_endp_t *endpp)
 		m_target_ep[usb_id][host_ep][0] = endpp->addr;
 		m_ep_pbuffer[usb_id][host_ep][0] = ep_buffer;
 	}
-	usb_h_ep_config((usb_id), host_ep | endp_dir, endpp->type,isr_en,endpp->interval, ep_buffer, endpp->mtu);
+	usb_h_ep_config(usb_id, host_ep | endp_dir, endpp->type,isr_en,endpp->interval, ep_buffer, MIN(64,endpp->mtu));
 	
 	if(isr_en){
 		usb_h_ep_read_async(usb_id, host_ep, endpp->addr, NULL, 0, endpp->type, 1);
 	}
+    
 	logd("usbh_endp_register ep=%x %x\n",host_ep,endpp->addr | endp_dir);
 
 	return ERROR_SUCCESS;
@@ -576,7 +537,7 @@ error_t hal_usbh_in(uint8_t id, usb_endp_t *endpp, uint8_t* buf, uint16_t* plen,
 	#if USBH_LOOP_ENABLE
 	*plen = usb_h_ep_read(usb_id, host_ep, endpp->mtu, endpp->addr, buf, *plen, endpp->type);
 	#else
-	*plen = usb_h_ep_read_async(usb_id, host_ep, endpp->addr, buf, endpp->mtu, endpp->type, 0);
+	*plen = usb_h_ep_read_async(usb_id, host_ep, endpp->addr, buf, MIN(64,endpp->mtu), endpp->type, 0);
     usb_h_ep_read_async(usb_id, host_ep, endpp->addr, NULL, 0, endpp->type, 1);
 	#endif
 
@@ -616,6 +577,13 @@ error_t hal_usbh_driver_init(uint8_t id)
     m_ep_pbuffer[usb_id][0][1] = ep0_dma[usb_id];
     mem_buf_init(&usbh_mem[usb_id], ep_dma_buf[usb_id], sizeof(ep_dma_buf[usb_id]), 4);
 
+    usb_otg_resume(usb_id);  //打开usb host之后恢复otg检测
+    #if USB_HOST_ASYNC
+    usbh_sem_init(usb_id);
+    #endif
+    usb_host_config(usb_id);
+    usb_h_isr_reg(usb_id, 1, 0);
+    
 	return ERROR_SUCCESS;
 }
 error_t hal_usbh_driver_deinit(uint8_t id)
@@ -624,12 +592,11 @@ error_t hal_usbh_driver_deinit(uint8_t id)
 	#if USB_HOST_ASYNC
     usbh_sem_post(usb_id);		//拔掉设备时，让读写线程快速释放
 	#endif
-    usb_sie_close(usb_id);
+    usb_sie_disable(usb_id);
 
 	#if USB_HOST_ASYNC
 	usbh_sem_del(usb_id);
 	#endif
-
 	return ERROR_SUCCESS;
 }
 void hal_usbh_driver_task(uint32_t dt_ms)

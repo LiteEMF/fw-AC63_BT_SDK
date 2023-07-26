@@ -45,7 +45,7 @@
  * */
 #if defined CONFIG_CPU_BR23
 #define _timer_init(ch,priority,us)                             \
-    request_irq(IRQ_TIME3_IDX, priority, timer##ch##_isr, 0);        \
+    request_irq(IRQ_TIME##ch##_IDX, priority, timer##ch##_isr, 0);        \
     TIMER_SFR(ch)->CNT = 0;									    \
     TIMER_SFR(ch)->PWM = 0;                                     \             
 	TIMER_SFR(ch)->PRD = us*24UL/4;                             \
@@ -55,7 +55,7 @@
 
 #elif defined CONFIG_CPU_BD19
 #define _timer_init(ch,priority,us)                             \
-    request_irq(IRQ_TIME3_IDX, priority, timer##ch##_isr, 0);        \
+    request_irq(IRQ_TIME##ch##_IDX, priority, timer##ch##_isr, 0);        \
     TIMER_SFR(ch)->CNT = 0;									    \
     TIMER_SFR(ch)->PWM = 0;                                     \    
 	TIMER_SFR(ch)->PRD = us*clk_get("timer")/1000000/4; /*TCFG_CLOCK_SYS_SRC选择晶振时钟源：24MHz*/         \
@@ -134,9 +134,9 @@ static void timer5_isr(void)
 }
 #endif
 
-static void timer_init(u8 timer_ch, u32 us)
+static void timer_init(u8 timer, u32 us)
 {
-    switch (timer_ch) {
+    switch (timer) {
     case 0:
 		#if API_TIMER_BIT_ENABLE & BIT(0)
         _timer_init(0, TIMER_PRI_ATT(0), us);
@@ -184,8 +184,8 @@ static void timer_init(u8 timer_ch, u32 us)
 *******************************************************************/
 bool hal_timer_init(uint8_t id)
 {
-	uint32_t chanel = TIMER_CH_ATT(id);
-	timer_init(chanel, TIMER_FREQ_ATT(id));
+	uint32_t timer = m_timer_map[id].peripheral;
+	timer_init(timer, TIMER_FREQ_ATT(id));
 	return true;
 }
 bool hal_timer_deinit(uint8_t id)

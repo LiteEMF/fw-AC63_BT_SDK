@@ -592,7 +592,7 @@ const struct wakeup_param wk_param = {
     .aport[0] = &charge_port,
     .aport[1] = &vbat_port,
     .aport[2] = &ldoin_port,
-#elif defined KEY_USB_DET_GPIO
+#elif defined KEY_USB_DET_GPIO && (PIN_NULL != KEY_USB_DET_GPIO)
     .port[2] = &usbdet_port,
 #endif
 

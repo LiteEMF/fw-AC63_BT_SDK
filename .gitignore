@@ -58,7 +58,13 @@ cscope.out
 *.ufw
 
 #add for build
-cpu/**/tools/*
+cpu/**/tools/**/*.bin
+cpu/**/tools/**/*.txt
+cpu/**/tools/**/*.fw
+cpu/**/tools/**/*.ver
+cpu/**/tools/**/*.lst
+cpu/**/tools/**/*.cfg
+cpu/**/tools/**/*.ini
 apps/**/board/**/*.bat
 *.layout
 *.depend
