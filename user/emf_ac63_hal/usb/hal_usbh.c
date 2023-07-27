@@ -134,7 +134,7 @@ void usb_h_isr(const usb_dev usb_id)
     }
 
     if (intr_tx & BIT(0)) {
-		usbh_endp_in_event(usb_id,0);
+		// usbh_endp_in_event(usb_id<<4,0);
 		#if USB_HOST_ASYNC
 		usbh_sem_post(usb_id);
 		#endif
@@ -142,13 +142,13 @@ void usb_h_isr(const usb_dev usb_id)
 
     for (int i = 1; i < USBH_ENDP_NUM; i++) {
         if (intr_tx & BIT(i)) {
-			usbh_endp_out_event(usb_id,i);
+			usbh_endp_out_event(usb_id<<4,m_target_ep[usb_id][i][0]);
         }
     }
 
     for (int i = 1; i < USBH_ENDP_NUM; i++) {
         if (intr_rx & BIT(i)) {
-			usbh_endp_in_event(usb_id,i | TUSB_DIR_IN_MASK);
+			usbh_endp_in_event(usb_id<<4, m_target_ep[usb_id][i][1] | TUSB_DIR_IN_MASK);
         }
     }
     __asm__ volatile("csync");
@@ -476,7 +476,7 @@ error_t hal_usbh_endp_register(uint8_t id, usb_endp_t *endpp)
         return ERROR_FAILE;
     }
     
-	ep_buffer = mem_buf_alloc(&usbh_mem[usb_id], MIN(64,endpp->mtu) + 4);
+	ep_buffer = mem_buf_alloc(&usbh_mem[usb_id], endpp->mtu + 4);
     if(NULL == ep_buffer){
         logd("usbh mem null!\n");
         return ERROR_NO_MEM;
@@ -489,12 +489,11 @@ error_t hal_usbh_endp_register(uint8_t id, usb_endp_t *endpp)
 		m_target_ep[usb_id][host_ep][0] = endpp->addr;
 		m_ep_pbuffer[usb_id][host_ep][0] = ep_buffer;
 	}
-	usb_h_ep_config(usb_id, host_ep | endp_dir, endpp->type,isr_en,endpp->interval, ep_buffer, MIN(64,endpp->mtu));
+	usb_h_ep_config(usb_id, host_ep | endp_dir, endpp->type,isr_en,endpp->interval, ep_buffer, endpp->mtu);
 	
 	if(isr_en){
 		usb_h_ep_read_async(usb_id, host_ep, endpp->addr, NULL, 0, endpp->type, 1);
 	}
-    
 	logd("usbh_endp_register ep=%x %x\n",host_ep,endpp->addr | endp_dir);
 
 	return ERROR_SUCCESS;
@@ -537,7 +536,7 @@ error_t hal_usbh_in(uint8_t id, usb_endp_t *endpp, uint8_t* buf, uint16_t* plen,
 	#if USBH_LOOP_ENABLE
 	*plen = usb_h_ep_read(usb_id, host_ep, endpp->mtu, endpp->addr, buf, *plen, endpp->type);
 	#else
-	*plen = usb_h_ep_read_async(usb_id, host_ep, endpp->addr, buf, MIN(64,endpp->mtu), endpp->type, 0);
+	*plen = usb_h_ep_read_async(usb_id, host_ep, endpp->addr, buf, endpp->mtu, endpp->type, 0);
     usb_h_ep_read_async(usb_id, host_ep, endpp->addr, NULL, 0, endpp->type, 1);
 	#endif
 
