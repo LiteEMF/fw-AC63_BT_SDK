@@ -58,9 +58,9 @@
     request_irq(IRQ_TIME##ch##_IDX, priority, timer##ch##_isr, 0);        \
     TIMER_SFR(ch)->CNT = 0;									    \
     TIMER_SFR(ch)->PWM = 0;                                     \    
-	TIMER_SFR(ch)->PRD = us*clk_get("timer")/1000000/4; /*TCFG_CLOCK_SYS_SRC选择晶振时钟源：24MHz*/         \
-    TIMER_SFR(ch)->CON = (0b10 << 2);/*选择晶振时钟源：24MHz*/   \
-    TIMER_SFR(ch)->CON |= (0b0001 << 4); /*时钟源再4分频*/		 \
+    TIMER_SFR(ch)->CON  = (0b110 << 10);					/*时钟源选择STD_24M时钟源*/\
+    TIMER_SFR(ch)->CON |= (0b0001 << 4);					/*时钟源再4分频*/\
+	TIMER_SFR(ch)->PRD = us*(24/4); /*TCFG_CLOCK_SYS_SRC选择晶振时钟源：24MHz*/         \
 	TIMER_SFR(ch)->CON |= BIT(0);
 #endif
 

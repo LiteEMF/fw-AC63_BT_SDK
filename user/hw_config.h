@@ -64,7 +64,7 @@ extern "C" {
 	#if GAMEPAD1	
 		#define APP_KEY_ENABLE			1
 		#define API_WDT_ENABLE			0
-		
+		#define TCFG_LOWPOWER_LOWPOWER_SEL			0		/*关闭修改防止定时器不准确*/
 
 		#define API_OTG_BIT_ENABLE			(BIT(0) | BIT(1))
 		#define API_USBD_BIT_ENABLE			(BIT(0) | BIT(1))

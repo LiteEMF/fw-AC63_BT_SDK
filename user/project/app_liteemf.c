@@ -138,7 +138,8 @@ static void liteemf_app_start()
     logi("=======================================");
     logi("app_file: %s", __FILE__);
 
-    clk_set("sys", BT_NORMAL_HZ);
+    clk_set("sys", 96 * 1000000L);		//fix clk
+    // clk_set("sys", BT_NORMAL_HZ);
 
     emf_api_init();
     emf_init();
