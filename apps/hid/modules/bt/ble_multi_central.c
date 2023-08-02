@@ -32,8 +32,11 @@
 #include "ble_multi.h"
 #include "le_client_demo.h"
 #include "gatt_common/le_gatt_common.h"
+#ifdef LITEEMF_ENABLED
+#include "api/bt/api_bt.h"
+#endif
 
-#if CONFIG_APP_MULTI && CONFIG_BT_GATT_CLIENT_NUM
+#if defined LITEEMF_ENABLED && CONFIG_BT_GATT_CLIENT_NUM
 
 #if LE_DEBUG_PRINT_EN
 #define log_info(x, ...)  printf("[MUL-CEN]" x " ", ## __VA_ARGS__)
@@ -47,15 +50,20 @@
 //搜索类型
 #define SET_SCAN_TYPE       SCAN_ACTIVE
 //搜索 周期大小
+#ifndef SET_SCAN_INTERVAL
 #define SET_SCAN_INTERVAL   ADV_SCAN_MS(24) // unit: 0.625ms
+#endif
 //搜索 窗口大小
+#ifndef SET_SCAN_WINDOW
 #define SET_SCAN_WINDOW     ADV_SCAN_MS(8)  // unit: 0.625ms, <= SET_SCAN_INTERVAL
-
+#endif
 //连接周期
 #define BASE_INTERVAL_MIN   (6)//最小的interval
 #define SET_CONN_INTERVAL   (BASE_INTERVAL_MIN*8) //(unit:1.25ms)
 //连接latency
+#ifndef SET_CONN_LATENCY
 #define SET_CONN_LATENCY    0  //(unit:conn_interval)
+#endif
 //连接超时
 #define SET_CONN_TIMEOUT    400 //(unit:10ms)
 
@@ -63,7 +71,9 @@
 #define SET_CREAT_CONN_TIMEOUT    8000 //(unit:ms)
 
 //配对信息表
+#ifndef CLIENT_PAIR_BOND_ENABLE
 #define CLIENT_PAIR_BOND_ENABLE    CONFIG_BT_SM_SUPPORT_ENABLE
+#endif
 #define CLIENT_PAIR_BOND_TAG       0x56
 
 struct ctl_pair_info_t {
@@ -95,8 +105,8 @@ const gatt_client_cfg_t mul_client_init_cfg = {
 
 static scan_conn_cfg_t multi_client_scan_cfg;
 static u16 multi_ble_client_write_handle;
+static u16 multi_ble_client_notify_handle;
 
-#define MULTI_TEST_WRITE_SEND_DATA            1 //测试发数
 //---------------------------------------------------------------------------
 //指定搜索uuid
 //指定搜索uuid
@@ -158,41 +168,48 @@ static const client_match_cfg_t multi_match_device_table[] = {
 static client_match_cfg_t *multi_bond_device_table;
 static u16  bond_device_table_cnt;
 
-//测试write数据操作
-static void multi_client_test_write(void)
+bool multi_client_user_server_write(uint8_t *packet, uint16_t size)
 {
-#if MULTI_TEST_WRITE_SEND_DATA
-    static u32 count = 0;
     int i, ret = 0;
     u16 tmp_handle;
-
-    count++;
     for (i = 0; i < SUPPORT_MAX_GATT_CLIENT; i++) {
         tmp_handle = ble_comm_dev_get_handle(i, GATT_ROLE_CLIENT);
         if (tmp_handle && multi_ble_client_write_handle) {
-            ret = ble_comm_att_send_data(tmp_handle, multi_ble_client_write_handle, &count, 16, ATT_OP_WRITE_WITHOUT_RESPOND);
-            log_info("test_write:%04x,%d", tmp_handle, ret);
+            ret = ble_comm_att_send_data(tmp_handle, multi_ble_client_write_handle,packet, size, ATT_OP_WRITE_WITHOUT_RESPOND);
+            log_info("write:%04x,%d", tmp_handle, ret);
         }
     }
-#endif
+    return !ret;// return 1表示写成功
 }
 
-//配置扫描匹配连接的设备，已经连上后搜索匹配的profile uuid
+
+
+//配置扫描匹配连接的设备，已经连上后搜索匹配的profile uuid, CLIENT_PAIR_BOND_ENABLE=0 不绑定使用
 static const gatt_search_cfg_t multil_client_search_config = {
     .match_devices = multi_match_device_table,
     .match_devices_count = (sizeof(multi_match_device_table) / sizeof(client_match_cfg_t)),
+    #ifdef BTC_RSSI_LEVEL           //cesar add
+    .match_rssi_enable = 1,
+    .match_rssi_value = BTC_RSSI_DEFAULT_LEVEL;
+    #else
     .match_rssi_enable = 0,
+    #endif
 
     .search_uuid_group = jl_multi_search_uuid_table,
     .search_uuid_count = (sizeof(jl_multi_search_uuid_table) / sizeof(target_uuid_t)),
     .auto_enable_ccc = 1,
 };
 
-//配置扫描匹配连接绑定后的设备
+//配置扫描匹配连接绑定后的设备,CLIENT_PAIR_BOND_ENABLE绑定设备使用
 static gatt_search_cfg_t multil_client_bond_config = {
     .match_devices = NULL,
     .match_devices_count = 0,
+    #ifdef BTC_RSSI_LEVEL           //cesar add
+    .match_rssi_enable = 1,
+    .match_rssi_value = BTC_RSSI_DEFAULT_LEVEL;
+    #else
     .match_rssi_enable = 0,
+    #endif
 
     .search_uuid_group = jl_multi_search_uuid_table,
     .search_uuid_count = (sizeof(jl_multi_search_uuid_table) / sizeof(target_uuid_t)),
@@ -217,7 +234,7 @@ static void multi_client_reflash_bond_search_config(void)
 
         if (CLIENT_PAIR_BOND_TAG == record_bond_info[i].head_tag) {
             r_printf("set bond search: %d\n", i);
-            multi_bond_device_table[i].filter_pdu_bitmap = BIT(EVENT_ADV_SCAN_IND) | BIT(EVENT_ADV_NONCONN_IND);
+            multi_bond_device_table[i].filter_pdu_bitmap = BIT(EVENT_ADV_SCAN_IND) | BIT(EVENT_ADV_IND) | BIT(EVENT_ADV_NONCONN_IND) | BIT(EVENT_SCAN_RSP);//过滤掉scan adv noconn scan_rsp广播
         } else {
             multi_bond_device_table[i].filter_pdu_bitmap = EVENT_DEFAULT_REPORT_BITMAP;
         }
@@ -339,10 +356,16 @@ int multi_client_clear_pair(void)
     ble_gatt_client_disconnect_all();
     memset(&cur_conn_info, 0, sizeof(cur_conn_info));
     multi_client_pair_vm_do(NULL, 1);
+    #ifdef LITEEMF_ENABLED                   //解绑后打开扫描
+    ble_gatt_client_scan_enable(0);
+    ble_gatt_client_scan_enable(1);
+    #else
     if (BLE_ST_SCAN == ble_gatt_client_get_work_state()) {
         ble_gatt_client_scan_enable(0);
         ble_gatt_client_scan_enable(1);
     }
+    #endif
+
 #endif
     return 0;
 }
@@ -354,11 +377,24 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
     switch (event) {
     case GATT_COMM_EVENT_GATT_DATA_REPORT: {
         att_data_report_t *report_data = (void *)packet;
-        log_info("data_report:hdl=%04x,pk_type=%02x,size=%d\n", report_data->conn_handle, report_data->packet_type, report_data->blob_length);
-        put_buf(report_data->blob, report_data->blob_length);
+        // log_info("client:hdl=%04x,type=%02x,size=%d", report_data->conn_handle, report_data->packet_type, report_data->blob_length);
+        // put_buf(report_data->blob, report_data->blob_length);
 
         switch (report_data->packet_type) {
         case GATT_EVENT_NOTIFICATION://notify
+            if (report_data->value_handle == multi_ble_client_notify_handle) {
+                #ifdef LITEEMF_ENABLED
+                bt_evt_rx_t evt;
+                evt.bts = BT_UART;
+                evt.buf = report_data->blob;
+                evt.len = report_data->blob_length;
+                if(m_trps & BT0_SUPPORT & BIT(BT_BLEC_RF)){
+                    api_bt_event(BT_ID0,BT_BLEC_RF,BT_EVT_RX,&evt);    
+                }else{
+                    api_bt_event(BT_ID0,BT_BLEC,BT_EVT_RX,&evt);   
+                }
+                #endif
+            }
             break;
         case GATT_EVENT_INDICATION://indicate
             break;
@@ -373,6 +409,7 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
     break;
 
     case GATT_COMM_EVENT_CAN_SEND_NOW:
+        // log_info("GATT_COMM_EVENT_CAN_SEND_NOW\n");
         break;
 
     case GATT_COMM_EVENT_CONNECTION_COMPLETE:
@@ -390,10 +427,31 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
         cur_conn_info.conn_timeout =  little_endian_read_16(ext_param, 14 + 4);
         cur_conn_info.pair_flag = 0;
         cur_conn_info.head_tag = 0;
+        #ifdef LITEEMF_ENABLED
+        bt_evt_con_t evt;
+        memcpy(evt.mac[6], cur_conn_info.peer_address_info, 6);
+	    evt.name[0] = 0;
+        if(m_trps & BT0_SUPPORT & BIT(BT_BLEC_RF)){
+            api_bt_event(BT_ID0,BT_BLEC_RF,BT_EVT_CONNECTED,NULL); 
+
+            cur_conn_info.head_tag = CLIENT_PAIR_BOND_TAG;
+            cur_conn_info.pair_flag = 1;
+            multi_client_pair_vm_do(&cur_conn_info, 1);
+        }else{
+            api_bt_event(BT_ID0,BT_BLEC,BT_EVT_CONNECTED,NULL);   
+        }
+        #endif
         break;
 
     case GATT_COMM_EVENT_DISCONNECT_COMPLETE:
         log_info("disconnect_handle:%04x,reason= %02x\n", little_endian_read_16(packet, 0), packet[2]);
+        #ifdef LITEEMF_ENABLED
+        if(m_trps & BT0_SUPPORT & BIT(BT_BLEC_RF)){
+            api_bt_event(BT_ID0,BT_BLEC_RF,BT_EVT_DISCONNECTED,NULL); 
+        }else{
+            api_bt_event(BT_ID0,BT_BLEC,BT_EVT_DISCONNECTED,NULL);   
+        }
+        #endif
         break;
 
     case GATT_COMM_EVENT_ENCRYPTION_CHANGE:
@@ -448,7 +506,7 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
         break;
 
     case GATT_COMM_EVENT_SCAN_DEV_MATCH: {
-        log_info("match_dev:addr_type= %d\n", packet[0]);
+        log_info("match_dev:addr_type= %d,rssi= %d\n", packet[0], (int8_t)packet[7]);
         put_buf(&packet[1], 6);
         if (packet[8] == 2) {
             log_info("is TEST_BOX\n");
@@ -484,16 +542,30 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
     }
     break;
 
+    case GATT_COMM_EVENT_CREAT_CONN_TIMEOUT:
+        log_info("GATT_COMM_EVENT_CREAT_CONN_TIMEOUT");
+        break;
+
     case GATT_COMM_EVENT_GATT_SEARCH_MATCH_UUID: {
         opt_handle_t *opt_hdl = packet;
         log_info("match:server_uuid= %04x,charactc_uuid= %04x,value_handle= %04x\n", \
                  opt_hdl->search_uuid->services_uuid16, opt_hdl->search_uuid->characteristic_uuid16, opt_hdl->value_handle);
-#if MULTI_TEST_WRITE_SEND_DATA
-        //for test
+
         if (opt_hdl->search_uuid->characteristic_uuid16 == 0xae01) {
             multi_ble_client_write_handle = opt_hdl->value_handle;
+            log_info("get write handle:0x%x\n", multi_ble_client_write_handle);
         }
-#endif
+		if (opt_hdl->search_uuid->characteristic_uuid16 == 0xae02) {
+            multi_ble_client_notify_handle = opt_hdl->value_handle;
+            log_info("get read handle:0x%x\n", multi_ble_client_notify_handle);
+            #ifdef LITEEMF_ENABLED
+            if(m_trps & BT0_SUPPORT & BIT(BT_BLEC_RF)){
+                api_bt_event(BT_ID0,BT_BLEC_RF,BT_EVT_READY,NULL);    
+            }else{
+                api_bt_event(BT_ID0,BT_BLEC,BT_EVT_READY,NULL);   
+            }
+            #endif
+        }
     }
     break;
 
@@ -513,6 +585,18 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
 
     case GATT_COMM_EVENT_CLIENT_STATE:
         log_info("client_state: handle=%02x,%02x\n", little_endian_read_16(packet, 1), packet[0]);
+        switch (packet[0])
+        {
+        case BLE_ST_SCAN:
+            log_info("BLE_ST_SCAN\n");
+            break;
+        case BLE_ST_SEARCH_COMPLETE:
+            log_info("BLE_ST_SEARCH_COMPLETE\n");
+            break;
+        
+        default:
+            break;
+        }
         break;
 
     default:
@@ -524,7 +608,7 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
 //scan参数设置
 static void multi_scan_conn_config_set(struct ctl_pair_info_t *pair_info)
 {
-    multi_client_scan_cfg.scan_auto_do = 0;
+    multi_client_scan_cfg.scan_auto_do = 0;         //cesar fix
     multi_client_scan_cfg.creat_auto_do = 1;
     multi_client_scan_cfg.scan_type = SET_SCAN_TYPE;
     multi_client_scan_cfg.scan_filter = 1;
@@ -536,6 +620,14 @@ static void multi_scan_conn_config_set(struct ctl_pair_info_t *pair_info)
         multi_client_scan_cfg.creat_conn_interval = pair_info->conn_interval;
         multi_client_scan_cfg.creat_conn_latency = pair_info->conn_latency;
         multi_client_scan_cfg.creat_conn_super_timeout = pair_info->conn_timeout;
+
+        #ifdef LITEEMF_ENABLED
+        if((0 == pair_info->conn_interval) || (0xffff == pair_info->conn_interval)){
+            multi_client_scan_cfg.creat_conn_interval = SET_CONN_INTERVAL;
+            multi_client_scan_cfg.creat_conn_latency = SET_CONN_LATENCY;
+            multi_client_scan_cfg.creat_conn_super_timeout = SET_CONN_TIMEOUT;
+        }
+        #endif
     } else {
         multi_client_scan_cfg.creat_conn_interval = SET_CONN_INTERVAL;
         multi_client_scan_cfg.creat_conn_latency = SET_CONN_LATENCY;
@@ -548,11 +640,29 @@ static void multi_scan_conn_config_set(struct ctl_pair_info_t *pair_info)
     ble_gatt_client_set_scan_config(&multi_client_scan_cfg);
 }
 
+
+bool multi_client_is_bonded(void)
+{
+    bool ret = false;
+    u8 i;
+    /*检查合法性*/
+    for (i = 0; i < SUPPORT_MAX_GATT_CLIENT; i++) {
+        if (CLIENT_PAIR_BOND_TAG == record_bond_info[i].head_tag && record_bond_info[i].pair_flag == 1) {
+            ret = true;
+            break;
+        }
+    }
+    return ret;
+}
+
+
 //multi client 初始化
 void multi_client_init(void)
 {
     log_info("%s", __FUNCTION__);
     int i;
+    multi_ble_client_write_handle=0;
+    multi_ble_client_notify_handle=0;
 
 #if CLIENT_PAIR_BOND_ENABLE
     if (!multi_bond_device_table) {
@@ -577,9 +687,7 @@ void multi_client_init(void)
 
     multi_scan_conn_config_set(NULL);
 
-#if MULTI_TEST_WRITE_SEND_DATA
-    sys_timer_add(0, multi_client_test_write, 500);
-#endif
+
 }
 
 //multi exit

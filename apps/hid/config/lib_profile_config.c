@@ -11,6 +11,11 @@
 /* #define LOG_DUMP_ENABLE */
 #include "debug.h"
 
+#if defined LITEEMF_ENABLED
+#include "api/bt/api_bt.h"
+#include "app/gamepad/app_gamepad.h"
+#endif
+
 
 typedef struct {
     // linked list - assert: first field
@@ -143,7 +148,7 @@ SDP_RECORD_HANDLER_REGISTER(pnp_sdp_record_item) = {
 
 #if (USER_SUPPORT_PROFILE_HID==1)
 u8 hid_profile_support = 1;
-u8 sdp_make_hid_service_data[0x200];
+u8 sdp_make_hid_service_data[0x260];
 SDP_RECORD_HANDLER_REGISTER(hid_sdp_record_item) = {
     .service_record = (u8 *)sdp_make_hid_service_data,
     .service_record_handle = 0x00010006,
@@ -176,6 +181,24 @@ void hid_sdp_init(const u8 *hid_descriptor, u16 size)
     /* put_buf(sdp_make_hid_service_data,real_size); */
 #endif
 }
+
+
+
+u8 update_eir_data_hook(u8 *eir_data, u8 len)
+{   
+    printf("===eir_data(%d)\n", len); 
+    #if (BT0_SUPPORT & BIT_ENUM(TR_EDR)) && (EDR_HID_SUPPORT & BIT(HID_TYPE_SWITCH))
+    api_bt_ctb_t *bt_ctbp = api_bt_get_ctb(TR_EDR);
+    if(bt_ctbp->hid_types & BIT(HID_TYPE_SWITCH)){
+        /*可修改eir_data的内容*/
+        len = eir_data[0];			//删除名称后其他自定义字段
+        eir_data[0]--;
+    }
+	#endif
+    put_buf(eir_data, len); 
+    return len;
+}
+
 
 /*注意hid_conn_depend_on_dev_company置2之后，默认不断开HID连接 */
 const u8 hid_conn_depend_on_dev_company = 2;
@@ -275,8 +298,13 @@ const u8 a2dp_mutual_support = 0;
 const u8 more_addr_reconnect_support = 0;
 const u8 more_hfp_cmd_support = 0;
 const u8 more_avctp_cmd_support = 0;
+#if EDR_EMITTER_EN
+const u8 hci_inquiry_support = 1;
+const u8 btstack_emitter_support  = 1;  /*定义用于优化代码编译*/
+#else
 const u8 hci_inquiry_support = 0;
 const u8 btstack_emitter_support  = 0;  /*定义用于优化代码编译*/
+#endif
 const u8 adt_profile_support = 0;
 const u8 pbg_support_enable = 0;
 

@@ -105,8 +105,10 @@ void btstack_ble_start_after_init(int param)
         void ble_bqb_test_thread_init(void);
         ble_bqb_test_thread_init();
     } else {
+        #if TCFG_USER_BLE_ENABLE
         extern void bt_ble_init(void);
         bt_ble_init();
+        #endif
     }
 }
 
@@ -158,7 +160,9 @@ int bt_comm_ble_status_event_handler(struct bt_event *bt)
         log_info("set dut mode\n");
         ble_standard_dut_test_init();
 #else
+        #if TCFG_USER_BLE_ENABLE
         btstack_ble_start_after_init(0);
+        #endif
 #endif
         break;
 

@@ -47,4 +47,6 @@
 #define     CFG_AAP_MODE_24G_ADDR            46
 #define     CFG_COORDINATE_ADDR              47
 
+#define     CFG_BLE_BONDING_REMOTE_INFO2     48
+
 #endif /* #ifndef _USER_CFG_ID_H_ */

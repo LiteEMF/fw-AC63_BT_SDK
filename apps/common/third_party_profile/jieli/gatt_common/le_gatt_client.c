@@ -39,6 +39,10 @@
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
+#ifdef LITEEMF_ENABLED
+#include "api/bt/api_bt.h"
+#endif
+
 #if TCFG_USER_BLE_ENABLE && CONFIG_BT_GATT_COMMON_ENABLE
 
 /* #ifdef log_info */
@@ -695,6 +699,20 @@ int ble_gatt_client_scan_enable(u32 en)
         break;
     }
 
+    #ifdef LITEEMF_ENABLED
+    bt_t bt;
+    if(m_trps & BT0_SUPPORT & BIT(BT_BLEC_RF)){
+        bt = BT_BLEC_RF;
+    }else{
+        bt = BT_BLEC;
+    }
+    if (en) {
+        api_bt_event(BT_ID0,bt,BT_EVT_SCAN,NULL);    
+    }else{
+        api_bt_event(BT_ID0,bt,BT_EVT_IDLE,NULL);   
+    }
+    #endif
+
     if (cur_state == next_state) {
         return GATT_OP_RET_SUCESS;
     }
@@ -794,6 +812,14 @@ static bool __resolve_adv_report(adv_report_t *report_pt, u16 len)
     u8 find_remoter = 0;
     u32 tmp32;
     client_match_cfg_t *match_cfg = NULL;
+    #ifdef LITEEMF_ENABLED
+    bt_evt_scan_t evt;
+    
+    evt.rssi = report_pt->rssi;
+    memcpy(evt.mac,report_pt->address,6);
+    memset(evt.name,0,sizeof(evt.name));
+    //log_info("adv_type=%d...",report_pt->event_type);log_info_hexdump(report_pt->address, 6);
+    #endif
 
     if (__check_device_is_match(report_pt->event_type, CLI_CREAT_BY_ADDRESS, report_pt->address, 6, &match_cfg)) {
         find_remoter = 1;
@@ -841,6 +867,10 @@ static bool __resolve_adv_report(adv_report_t *report_pt, u16 len)
             adv_data_pt[length - 1] = 0;;
             log_info("remoter_name:%s ,rssi:%d\n", adv_data_pt, report_pt->rssi);
             log_info_hexdump(report_pt->address, 6);
+            #ifdef LITEEMF_ENABLED
+            memcpy(evt.name,adv_data_pt,strlen(adv_data_pt));
+            #endif
+
             adv_data_pt[length - 1] = tmp32;
 
             //---------------------------------
@@ -884,6 +914,28 @@ static bool __resolve_adv_report(adv_report_t *report_pt, u16 len)
     }
 
 just_creat:
+
+    #ifdef LITEEMF_ENABLED	
+    if(0 == find_remoter){
+        if(m_trps & BT0_SUPPORT & BIT(BT_BLEC_RF)){
+            api_bt_event(BT_ID0,BT_BLEC_RF,BT_EVT_RX,&evt);    
+            #if (BT0_SUPPORT & BIT_ENUM(TR_BLE_RFC))
+            if(0 == memcmp(ble_rfc_scan_result.mac, report_pt->address,6)){
+                find_remoter = true;         //匹配到设备
+            }
+            #endif
+        }else{
+            api_bt_event(BT_ID0,BT_BLEC,BT_EVT_RX,&evt);   
+            #if (BT0_SUPPORT & BIT_ENUM(TR_BLEC))
+            if(0 == memcmp(blec_scan_result.mac, report_pt->address,6)){
+                find_remoter = true;         //匹配到设备
+            }
+            #endif
+        }
+        
+    }
+    #endif
+
     if (find_remoter) {
         if (__this->gatt_search_config->match_rssi_enable && report_pt->rssi < __this->gatt_search_config->match_rssi_value) {
             log_info("rssi no match!!!\n");

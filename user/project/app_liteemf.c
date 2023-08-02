@@ -147,6 +147,10 @@ static void liteemf_app_start()
     logd("start end\n");
     os_task_create(emf_task_handle,NULL,2,2048,512,"emf_task");
     heartbeat_msg_cnt = 0;
+
+    #if BT_ENABLE
+    api_bt_init();
+    #endif
 }
 
 /*******************************************************************
@@ -191,7 +195,9 @@ static int liteemf_event_handler(struct application *app, struct sys_event *even
 {
     switch (event->type) {
     case SYS_BT_EVENT:
-        // do bt event
+        #if API_BT_ENABLE
+        sys_bt_event_handler(event);
+        #endif
         return 0;
 
     case SYS_DEVICE_EVENT:

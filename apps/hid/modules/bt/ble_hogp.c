@@ -44,7 +44,10 @@
 #include "ble_hogp_profile.h"
 #include "gatt_common/le_gatt_common.h"
 #include "app_comm_bt.h"
-
+#ifdef LITEEMF_ENABLED
+#include "api/bt/api_bt.h"
+#include "api/api_log.h"
+#endif
 #if (TCFG_USER_BLE_ENABLE && CONFIG_HOGP_COMMON_ENABLE)
 /* #if RCSP_BTMATE_EN */
 /* #include "btstack/JL_rcsp_api.h" */
@@ -71,7 +74,7 @@ static const char user_tag_string[] = {EIR_TAG_STRING};
 //用户可配对的，这是样机跟客户开发的app配对的秘钥
 //const u8 link_key_data[16] = {0x06, 0x77, 0x5f, 0x87, 0x91, 0x8d, 0xd4, 0x23, 0x00, 0x5d, 0xf1, 0xd8, 0xcf, 0x0c, 0x14, 0x2b};
 
-#if CONFIG_BLE_HIGH_SPEED
+#if CONFIG_BLE_HIGH_SPEED               //liteemf unused!
 //ATT发送的包长,    note: 23 <=need >= MTU
 #define ATT_LOCAL_MTU_SIZE        (247)
 #else
@@ -92,11 +95,9 @@ static uint8_t hogp_connection_update_enable = 1;
 
 //连接参数表,按顺序优先请求,主机接受了就中止
 static const struct conn_update_param_t Peripheral_Preferred_Connection_Parameters[] = {
-    {6, 9,  100, 300}, //android
-    /* {7, 7,  20, 300}, //mosue */
-    /* {20, 20,  20, 300}, //kb */
-    {12, 12, 30, 300}, //ios
-    {6,  12, 30, 400},// ios fast
+    {6, 6,  0, 200},	//为了简单适配2.4g
+	{6, 9,  100, 300},   //android
+    {12, 12, 30, 300},   //ios
 };
 //共可用的参数组数
 #define CONN_PARAM_TABLE_CNT      (sizeof(Peripheral_Preferred_Connection_Parameters)/sizeof(struct conn_update_param_t))
@@ -110,8 +111,9 @@ static adv_cfg_t hogp_server_adv_config;
 
 /*--------------------------------------------*/
 //普通未连接广播周期 (unit:0.625ms)
+#ifndef ADV_INTERVAL_MIN
 #define ADV_INTERVAL_MIN                (160 * 5)
-
+#endif
 /*------------------------------
 配置有配对绑定时,先回连广播快连,再普通广播;否则只作普通广播
 定向广播只带对方的地址,不带adv和rsp包
@@ -215,6 +217,7 @@ void set_multi_devices_adv_flag(u8 adv_flag)
     multi_dev_adv_flag = adv_flag;
 }
 
+#ifndef LITEEMF_ENABLED
 //输入passkey 加密
 #define PASSKEY_ENABLE                     0
 
@@ -263,6 +266,7 @@ static gatt_ctrl_t hogp_gatt_control_block = {
     //cbk,event handle
     .hci_cb_packet_handler = NULL,
 };
+#endif
 
 /*************************************************************************************************/
 /*!
@@ -464,7 +468,9 @@ static void __att_check_remote_result(u16 con_handle, remote_type_e remote_type)
 static int hogp_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_param)
 {
     /* log_info("event: %02x,size= %d\n",event,size); */
-
+    #if defined LITEEMF_ENABLED
+    api_bt_ctb_t* bt_ctbp;
+    #endif
     switch (event) {
 
     case GATT_COMM_EVENT_CAN_SEND_NOW:
@@ -490,6 +496,17 @@ static int hogp_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_pa
         log_info("con_interval = %d\n", little_endian_read_16(ext_param, 14 + 0));
         log_info("con_latency = %d\n", little_endian_read_16(ext_param, 14 + 2));
         log_info("cnn_timeout = %d\n", little_endian_read_16(ext_param, 14 + 4));
+        #if defined LITEEMF_ENABLED
+        if(m_trps & BT0_SUPPORT & BIT(BT_BLE_RF)){
+            bt_ctbp = api_bt_get_ctb(BT_BLE_RF);
+        }else{
+            bt_ctbp = api_bt_get_ctb(BT_BLE);
+        }
+        if(NULL != bt_ctbp){
+            bt_ctbp->inteval = little_endian_read_16(ext_param, 14 + 0);
+        }
+        #endif
+
 
         if (little_endian_read_16(ext_param, 14 + 2)) {
             //latency非0值
@@ -507,15 +524,35 @@ static int hogp_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_pa
         if (little_endian_read_16(ext_param, 14 + 2)) {
             ble_op_latency_skip(hogp_con_handle, LATENCY_SKIP_INTERVAL_KEEP); //
         }
+		
+		if (m_trps & BT0_SUPPORT & BIT(BT_BLE_RF) && hogp_server_adv_config.adv_type == ADV_IND){
+            //保存配对信息
+            memcpy(&hogp_pair_info.peer_address_info, cur_peer_addr_info, 7);
+            hogp_pair_info.pair_flag = 1;
+            __hogp_conn_pair_vm_do(&hogp_pair_info, 1);
+            __ble_state_to_user(BLE_PRIV_PAIR_ENCRYPTION_CHANGE, first_pair_flag);
+        }
         break;
 
     case GATT_COMM_EVENT_DISCONNECT_COMPLETE:
         log_info("disconnect_handle:%04x,reason= %02x\n", little_endian_read_16(packet, 0), packet[2]);
         hogp_con_handle = 0;
-        if (8 == packet[2] && hogp_pair_info.pair_flag) {
-            //超时断开,有配对发定向广播
-            hogp_pair_info.direct_adv_cnt = REPEAT_DIRECT_ADV_COUNT;
-            hogp_adv_config_set();
+
+        if(m_trps & BT0_SUPPORT & BIT(BT_BLE_RF)){
+            if(hogp_pair_info.pair_flag){
+                extern void hogp_reconnect_adv_config_set(u8 adv_type, u32 adv_timeout);
+                hogp_reconnect_adv_config_set(ADV_DIRECT_IND_LOW, 0);
+            }else{
+                hogp_adv_config_set(); //解决解绑后立马又被连上的问题
+            }
+        }else{
+            if (8 == packet[2] && hogp_pair_info.pair_flag) {
+                //超时断开,有配对发定向广播, 由于adv_auto_do打开了,这里需要提前设置广播类型
+                hogp_pair_info.direct_adv_cnt = REPEAT_DIRECT_ADV_COUNT;
+                hogp_adv_config_set();
+            } else if (packet[2] == 19) {
+                //主机主动断开连接
+            }
         }
         break;
 
@@ -555,6 +592,18 @@ static int hogp_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_pa
         log_info("update_interval = %d\n", little_endian_read_16(ext_param, 6 + 0));
         log_info("update_latency = %d\n", little_endian_read_16(ext_param, 6 + 2));
         log_info("update_timeout = %d\n", little_endian_read_16(ext_param, 6 + 4));
+        #if defined LITEEMF_ENABLED
+        if(m_trps & BT0_SUPPORT & BIT(BT_BLE_RF)){
+            bt_ctbp = api_bt_get_ctb(BT_BLE_RF);
+        }else{
+            bt_ctbp = api_bt_get_ctb(BT_BLE);
+        }
+        if(NULL != bt_ctbp){
+            bt_ctbp->inteval = little_endian_read_16(ext_param, 14 + 0);
+        }
+        logi_y("update:interval, latency, timout = %d ms, %d, %d ms\n", little_endian_read_16(ext_param, 6 + 0)*125/100, little_endian_read_16(ext_param, 6 + 2), little_endian_read_16(ext_param, 6 + 4)*10);
+        #endif
+
         if (ble_hid_timer_handle) {
             log_info("mdy_timer= %d\n", (u32)(little_endian_read_16(ext_param, 6 + 0) * 1.25));
             sys_s_hi_timer_modify(ble_hid_timer_handle, (u32)(little_endian_read_16(ext_param, 6 + 0) * 1.25));
@@ -748,6 +797,19 @@ static uint16_t hogp_att_read_callback(hci_con_handle_t connection_handle, uint1
             break;
         }
         if (buffer) {
+            #if defined LITEEMF_ENABLED && (BLE_HID_SUPPORT & HID_GAMEPAD_MASK)
+            api_bt_ctb_t* bt_ctbp;
+            uint16_t vid=PNP_VID,pid=PNP_PID;
+            bt_ctbp = api_bt_get_ctb(BT_BLE);
+            if(NULL != bt_ctbp){
+                app_gamepad_get_special_vid((trp_t)BT_BLE, bt_ctbp->hid_types, &vid, &pid);
+                PnP_ID[1] = vid & 0xFF;
+                PnP_ID[2] = vid >> 8;
+                PnP_ID[3] = pid & 0xFF;
+                PnP_ID[4] = pid >> 8;
+            }
+            #endif
+            
             memcpy(buffer, &PnP_ID[offset], buffer_size);
             att_value_len = buffer_size;
         }
@@ -785,7 +847,7 @@ static uint16_t hogp_att_read_callback(hci_con_handle_t connection_handle, uint1
             att_value_len = buffer_size;
         }
         break;
-
+    #ifdef ATT_CHARACTERISTIC_ae10_01_VALUE_HANDLE
     case ATT_CHARACTERISTIC_ae10_01_VALUE_HANDLE:
         att_value_len = sizeof(hid_information1);
         if ((offset >= att_value_len) || (offset + buffer_size) > att_value_len) {
@@ -799,7 +861,7 @@ static uint16_t hogp_att_read_callback(hci_con_handle_t connection_handle, uint1
         }
         /* __hogp_send_connetion_update_deal(connection_handle); */
         break;
-
+    #endif
 
     case ATT_CHARACTERISTIC_2a05_01_CLIENT_CONFIGURATION_HANDLE:
     case ATT_CHARACTERISTIC_2a19_01_CLIENT_CONFIGURATION_HANDLE:
@@ -924,7 +986,7 @@ static int hogp_att_write_callback(hci_con_handle_t connection_handle, uint16_t 
     case ATT_CHARACTERISTIC_ae41_01_VALUE_HANDLE:
         ble_hid_transfer_channel_recieve(buffer, buffer_size);
         break;
-
+    #ifdef ATT_CHARACTERISTIC_ae10_01_VALUE_HANDLE
     case ATT_CHARACTERISTIC_ae10_01_VALUE_HANDLE:
         tmp16 = sizeof(hid_information1);
         if ((offset >= tmp16) || (offset + buffer_size) > tmp16) {
@@ -940,6 +1002,7 @@ static int hogp_att_write_callback(hci_con_handle_t connection_handle, uint16_t 
         put_buf(hid_information1, tmp16);
         ble_hid_transfer_channel_recieve1(hid_information1, tmp16);
         break;
+    #endif
 
     default:
         break;
@@ -1218,22 +1281,7 @@ static void hogp_server_init(void)
     hogp_adv_config_set();
 }
 
-/*************************************************************************************************/
-/*!
- *  \brief      bt_ble_before_start_init
- *
- *  \param      [in]
- *
- *  \return
- *
- *  \note
- */
-/*************************************************************************************************/
-void bt_ble_before_start_init(void)
-{
-    log_info("%s", __FUNCTION__);
-    ble_comm_init(&hogp_gatt_control_block);
-}
+
 
 /*************************************************************************************************/
 /*!
@@ -1308,6 +1356,23 @@ static void hid_battery_timer_handler(void *priev)
 #endif // TCFG_SYS_LVD_EN
 }
 
+#ifndef LITEEMF_ENABLED
+/*************************************************************************************************/
+/*!
+ *  \brief      bt_ble_before_start_init
+ *
+ *  \param      [in]
+ *
+ *  \return
+ *
+ *  \note
+ */
+/*************************************************************************************************/
+void bt_ble_before_start_init(void)
+{
+    log_info("%s", __FUNCTION__);
+    ble_comm_init(&hogp_gatt_control_block);
+}
 /*************************************************************************************************/
 /*!
  *  \brief      模块初始化
@@ -1398,6 +1463,59 @@ void ble_module_enable(u8 en)
     log_info("mode_en:%d\n", en);
     ble_comm_module_enable(en);
 }
+
+#else
+
+// addd for multi service
+const gatt_server_cfg_t mul_server_init_cfg = {
+    .att_read_cb = &hogp_att_read_callback,
+    .att_write_cb = &hogp_att_write_callback,
+    .event_packet_handler = &hogp_event_packet_handler,
+};
+void multi_server_init(void)
+{
+    hogp_server_init();
+}
+//server exit
+void multi_server_exit(void)
+{
+    log_info("%s", __FUNCTION__);
+}
+bool multi_server_is_bonded(void)
+{
+    return hogp_pair_info.pair_flag;
+}
+
+bool is_ble_notify_open(void)
+{
+    #if defined BLE_HID_SUPPORT && BLE_HID_SUPPORT           //如果带HID,只判断HID,android 不支持多HID服务
+    if(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE == ble_gatt_server_characteristic_ccc_get(hogp_con_handle, ATT_CHARACTERISTIC_2a4d_01_CLIENT_CONFIGURATION_HANDLE)){
+        return false;
+    }
+    if(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE == ble_gatt_server_characteristic_ccc_get(hogp_con_handle, ATT_CHARACTERISTIC_2a4d_02_CLIENT_CONFIGURATION_HANDLE)){
+        return false;
+    }
+    if(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE == ble_gatt_server_characteristic_ccc_get(hogp_con_handle, ATT_CHARACTERISTIC_2a4d_04_CLIENT_CONFIGURATION_HANDLE)){
+        return false;
+    }
+    if(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE == ble_gatt_server_characteristic_ccc_get(hogp_con_handle, ATT_CHARACTERISTIC_2a4d_05_CLIENT_CONFIGURATION_HANDLE)){
+        return false;
+    }
+    if(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE == ble_gatt_server_characteristic_ccc_get(hogp_con_handle, ATT_CHARACTERISTIC_2a4d_06_CLIENT_CONFIGURATION_HANDLE)){
+        return false;
+    }
+    if(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE == ble_gatt_server_characteristic_ccc_get(hogp_con_handle, ATT_CHARACTERISTIC_2a4d_07_CLIENT_CONFIGURATION_HANDLE)){
+        return false;
+    }
+    #else                               //如果不带HID判断数据通道
+    if(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE == ble_gatt_server_characteristic_ccc_get(hogp_con_handle, ATT_CHARACTERISTIC_ae42_01_CLIENT_CONFIGURATION_HANDLE)){
+        return false;
+    }
+    #endif
+    return true;
+}
+#endif
+
 
 /*************************************************************************************************/
 /*!
@@ -1653,6 +1771,9 @@ void ble_set_pair_addrinfo(u8 *addr_info)
         __hogp_conn_pair_vm_do(&hogp_pair_info, 1);
     } else {
         memset(&hogp_pair_info, 0, sizeof(struct pair_info_t));
+        hogp_pair_info.head_tag = BLE_VM_HEAD_TAG;
+        hogp_pair_info.tail_tag = BLE_VM_TAIL_TAG;
+        __hogp_conn_pair_vm_do(&hogp_pair_info, 1);
     }
 }
 
@@ -1739,12 +1860,14 @@ int ble_hid_transfer_channel_send(u8 *packet, u16 size)
  *  \note
  */
 /*************************************************************************************************/
+#ifdef ATT_CHARACTERISTIC_ae10_01_VALUE_HANDLE
 int ble_hid_transfer_channel_send1(u8 *packet, u16 size)
 {
     /* log_info("transfer_tx(%d):", size); */
     /* log_info_hexdump(packet, size); */
     return ble_comm_att_send_data(hogp_con_handle, ATT_CHARACTERISTIC_ae10_01_VALUE_HANDLE, packet, size, ATT_OP_AUTO_READ_CCC);
 }
+#endif
 
 /*************************************************************************************************/
 /*!

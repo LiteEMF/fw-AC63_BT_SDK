@@ -32,6 +32,9 @@
 #include "app_power_manage.h"
 #include "app_chargestore.h"
 #include "app_comm_bt.h"
+#ifdef LITEEMF_ENABLED
+#include "api/bt/api_bt.h"
+#endif
 
 #define LOG_TAG_CONST       COMM_EDR
 #define LOG_TAG             "[COMM_EDR]"
@@ -206,7 +209,9 @@ void btstack_edr_start_before_init(const edr_init_cfg_t *cfg, int param)
 
 #if (USER_SUPPORT_PROFILE_HID==1)
     user_hid_set_icon(cfg->class_type);//default icon
-    user_hid_set_ReportMap(cfg->report_map, cfg->report_map_size);
+    if(NULL != cfg->report_map){
+        user_hid_set_ReportMap(cfg->report_map, cfg->report_map_size);
+    }
     user_hid_init(NULL);
     //搜索图标
 #else
@@ -224,6 +229,18 @@ void btstack_edr_start_before_init(const edr_init_cfg_t *cfg, int param)
     //5:MITM protect require - general bonding
     __set_simple_pair_param(cfg->io_capabilities, cfg->oob_data, cfg->authentication_req);
     __set_simple_pair_flag(!cfg->passkey_enable);
+
+#if (USER_SUPPORT_PROFILE_SPP==1)
+    spp_data_deal_handle_register(user_spp_data_handler);
+    transport_spp_flow_cfg();
+#endif
+
+
+#if EDR_EMITTER_EN
+    ///获取远端设备蓝牙名字回调
+    read_remote_name_handle_register(bt_emitter_search_noname);
+#endif
+
 
     log_info("---edr's address");
     printf_buf((void *)bt_get_mac_addr(), 6);
@@ -243,9 +260,26 @@ void btstack_edr_start_before_init(const edr_init_cfg_t *cfg, int param)
 /*************************************************************************************************/
 void btstack_edr_start_after_init(int param)
 {
+#if (USER_SUPPORT_PROFILE_SPP==1)
+    transport_spp_init();
+#endif
+
     if (sniff_support_reset_anchor_point) {
         lmp_sniff_t_slot_attemp_reset(sniff_param_info->max_interval_slots, sniff_param_info->attempt_slots);
     }
+
+#if EDR_EMITTER_EN
+    bt_emitter_init();
+#if(EDR_EMITTER_PAGESCAN_ONLY == 0)
+    inquiry_result_handle_register(bt_emitter_search_result);
+    bt_emitter_role_set(BT_EMITTER_EN);
+#else
+    bt_wait_connect_active_enable(1);
+#endif
+
+#else
+    bt_wait_connect_active_enable(1);
+#endif
 
 #if SNIFF_ENABLE
     /* bt_wait_phone_connect_control_ext(1, 1); */
@@ -279,6 +313,9 @@ void btstack_edr_exit(int param)
 #if (USER_SUPPORT_PROFILE_HID==1)
     log_info("hid exit\n");
     user_hid_exit();
+#endif
+#if (USER_SUPPORT_PROFILE_SPP==1)
+    transport_spp_disconnect();
 #endif
 
     //ble先退,edr最后退出的
@@ -520,6 +557,9 @@ void bt_wait_phone_connect_control_ext(u8 inquiry_en, u8 page_scan_en)
 {
     if (inquiry_en) {
         user_send_cmd_prepare(USER_CTRL_WRITE_SCAN_ENABLE, 0, NULL);
+        #ifdef LITEEMF_ENABLED
+        api_bt_event(BT_ID0,BT_EDR,BT_EVT_ADV,NULL);
+        #endif
     } else {
         user_send_cmd_prepare(USER_CTRL_WRITE_SCAN_DISABLE, 0, NULL);
     }
@@ -544,7 +584,20 @@ void bt_wait_phone_connect_control_ext(u8 inquiry_en, u8 page_scan_en)
 /*************************************************************************************************/
 void bt_wait_phone_connect_control(u8 enable)
 {
+#if EDR_EMITTER_EN
+#if EDR_EMITTER_PAGESCAN_ONLY
+    bt_wait_phone_connect_control_ext(0, enable);
+#else
+    if (enable) {
+        bt_emitter_start_search_device();
+    } else {
+        bt_emitter_stop_search_device();
+    }
+#endif
+
+#else
     bt_wait_phone_connect_control_ext(enable, enable);
+#endif
 }
 
 /*************************************************************************************************/
@@ -600,6 +653,13 @@ static void bt_hci_event_connection_exist(struct bt_event *bt)
 {
     bt_wait_phone_connect_control_ext(1, 1);
 }
+//搜索结束
+static void bt_hci_event_inquiry(struct bt_event *bt)
+{
+#if EDR_EMITTER_EN
+    bt_emitter_search_complete(bt->value);
+#endif
+}
 
 /*************************************************************************************************/
 /*!
@@ -643,7 +703,7 @@ int bt_comm_edr_hci_event_handler(struct bt_event *bt)
     switch (bt->event) {
     case HCI_EVENT_INQUIRY_COMPLETE:
         log_info(" HCI_EVENT_INQUIRY_COMPLETE \n");
-        /* bt_hci_event_inquiry(bt); */
+        bt_hci_event_inquiry(bt);
         break;
     case HCI_EVENT_USER_CONFIRMATION_REQUEST:
         log_info(" HCI_EVENT_USER_CONFIRMATION_REQUEST \n");

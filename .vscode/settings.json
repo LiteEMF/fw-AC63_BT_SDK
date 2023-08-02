@@ -72,7 +72,22 @@
 		"adafruit_neopixel.h": "c",
 		"adc_api.h": "c",
 		"emf.h": "c",
-		"unit_test.h": "c"
+		"unit_test.h": "c",
+		"board_ac6321a_stand_keyboard_cfg.h": "c",
+		"btcontroller_mode.h": "c",
+		"api_bt.h": "c",
+		"key_event_deal.h": "c",
+		"standard_hid.h": "c",
+		"app_comm_bt.h": "c",
+		"rcsp_bluetooth.h": "c",
+		"hid_dev_desc.h": "c",
+		"app_gamepad.h": "c",
+		"switch_controller.h": "c",
+		"xbox_controller.h": "c",
+		"gamepad_controller.h": "c",
+		"ps_controller.h": "c",
+		"bt_driver.h": "c",
+		"bt_typedef.h": "c"
 	},
 	"cmake.sourceDirectory": "D:/work/git/github/fw-AC63_BT_SDK/user/LiteEMF/api/gps"
 }

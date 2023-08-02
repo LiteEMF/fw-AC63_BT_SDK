@@ -286,6 +286,8 @@ c_SRC_FILES := \
 	../../../../apps/hid/modules/bt/app_comm_edr.c \
 	../../../../apps/hid/modules/bt/ble_hogp.c \
 	../../../../apps/hid/modules/bt/edr_hid_user.c \
+	../../../../apps/hid/modules/bt/ble_multi.c \
+	../../../../apps/hid/modules/bt/ble_multi_central.c \
 	../../../../apps/hid/modules/misc.c \
 	../../../../apps/hid/modules/power/app_charge.c \
 	../../../../apps/hid/modules/power/app_chargestore.c \

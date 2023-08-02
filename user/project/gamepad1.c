@@ -249,27 +249,44 @@ void user_vender_handler(void)
 
 
     //use test
-	#if API_USBD_BIT_ENABLE && (USBD_HID_SUPPORT & (BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_MOUSE) | BIT_ENUM(HID_TYPE_CONSUMER)))
-    if(m_systick - timer >= 3000){
-		uint8_t usb_id = 0;
-		usbd_dev_t *pdev = usbd_get_dev(usb_id);
-		trp_handle_t handle = {TR_USBD, 0, U16(DEF_DEV_TYPE_HID,DEF_HID_TYPE_KB)};
-        
-        handle.id = usb_id;
-		timer = m_systick;
+	#if (API_USBD_BIT_ENABLE && (USBD_HID_SUPPORT & (BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_MOUSE) | BIT_ENUM(HID_TYPE_CONSUMER)))) \ 
+	|| (BT_ENABLE && (BLE_HID_SUPPORT & (BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_MOUSE) | BIT_ENUM(HID_TYPE_CONSUMER))))
+    
+	if(m_systick - timer >= 3000){
+		bool ready = false;
+		#define  TEST_USB_ID	0
 
-        // logd("pdev->ready=%d\n",pdev->ready);
-        if(pdev->ready && 1){
+		#if USBD_HID_SUPPORT
+		usbd_dev_t *pdev = usbd_get_dev(TEST_USB_ID);
+		trp_handle_t usb_handle = {TR_USBD, TEST_USB_ID, U16(DEF_DEV_TYPE_HID,DEF_HID_TYPE_KB)};
+		ready |= pdev->ready; 
+		#endif
+
+		#if BLE_HID_SUPPORT
+		api_bt_ctb_t* bt_ctbp = api_bt_get_ctb(BT_BLE);
+		trp_handle_t ble_handle = {TR_BLE, BT_ID0, U16(DEF_DEV_TYPE_HID,DEF_HID_TYPE_KB)};
+		ready |= BOOL_SET(bt_ctbp->sta == BT_STA_READY); 
+		#endif
+		
+		timer = m_systick;
+		if(ready){
             static kb_t kb={KB_REPORT_ID,0};
             static mouse_t mouse={MOUSE_REPORT_ID,0};
 
             if(kb.key[0]){
                 kb.key[0] = 0;
+				kb.key[1] = 0;
             }else{
                 kb.key[0] = KB_CAP_LOCK;
+				kb.key[1] = KB_A;
             }
-            
-            api_transport_tx(&handle,&kb,sizeof(kb));
+
+			#if USBD_HID_SUPPORT
+            api_transport_tx(&usb_handle,&kb,sizeof(kb));
+			#endif
+			#if BLE_HID_SUPPORT
+			api_transport_tx(&ble_handle,&kb,sizeof(kb));
+			#endif
 
 
             if(mouse.x >= 0){
@@ -277,11 +294,23 @@ void user_vender_handler(void)
             }else{
                 mouse.x = 10;
             }
-            handle.index = U16(DEF_DEV_TYPE_HID,DEF_HID_TYPE_MOUSE);
-            api_transport_tx(&handle,&mouse,sizeof(mouse));
+
+			#if USBD_HID_SUPPORT
+            usb_handle.index = U16(DEF_DEV_TYPE_HID,DEF_HID_TYPE_MOUSE);
+            api_transport_tx(&usb_handle,&mouse,sizeof(mouse));
+			#endif
+			#if BLE_HID_SUPPORT
+			ble_handle.index = U16(DEF_DEV_TYPE_HID,DEF_HID_TYPE_MOUSE);
+			api_transport_tx(&ble_handle,&mouse,sizeof(mouse));
+
+			ble_handle.index = U16(DEV_TYPE_VENDOR,DEF_HID_TYPE_MOUSE);
+			api_transport_tx(&ble_handle,&mouse,sizeof(mouse));
+			#endif
         }
     }
 	#endif
+
+
 
 }
 

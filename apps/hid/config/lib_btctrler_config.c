@@ -15,6 +15,9 @@
 #include "system/includes.h"
 #include "btcontroller_config.h"
 #include "bt_common.h"
+#if defined LITEEMF_ENABLED && API_BT_ENABLE
+#include  "api/bt/api_bt.h"
+#endif
 
 /**
  * @brief Bluetooth Module
@@ -135,6 +138,15 @@ const int config_delete_link_key          = 1;
  * @brief Bluetooth LE setting
  */
 #if TCFG_USER_BLE_ENABLE
+/*
+**从机:
+    选择物理层这里3选1, 如果选择CONN_SET_CODED_PHY时 SELECT_CODED_S2_OR_S8 才有效
+    #define  SELECT_PHY                 CONN_SET_1M_PHY//1M:CONN_SET_1M_PHY 2M:CONN_SET_2M_PHY CODED:CONN_SET_CODED_PHY
+    选择CODED类型:S2 or S8
+    #define  SELECT_CODED_S2_OR_S8      CONN_SET_PHY_OPTIONS_S2//S2:CONN_SET_PHY_OPTIONS_S2 S8:CONN_SET_PHY_OPTIONS_S8      
+**主机:
+    #define SET_SELECT_PHY_CFG   LE_2M_PHY|LE_CODED_PHY    主机开启LE_2M_PHY支持(开启2M后主机主动断开连接有问题), 为什么要LE_CODED_PHY就不清楚
+*/
 
 #define SET_SELECT_PHY_CFG   0
 
@@ -160,9 +172,18 @@ const int config_btctler_le_afh_en = 0;
 const int config_btctler_le_master_multilink = 0;
 #endif
 
-#if CONFIG_BLE_HIGH_SPEED
+
+//超过23开启LE_DATA_PACKET_LENGTH_EXTENSION(具体长度由config_btctler_le_acl_packet_length设置)
+// 并且需要主/从机 请求开启长包发送, ble_comm_set_connection_data_length()
+#if CONFIG_BLE_HIGH_SPEED || (defined LITEEMF_ENABLED && (API_BT_LL_MTU > 20))
 const uint64_t config_btctler_le_features = SET_ENCRYPTION_CFG | SET_SELECT_PHY_CFG | LE_DATA_PACKET_LENGTH_EXTENSION | LE_2M_PHY;
+
+#ifdef API_BT_LL_MTU
+const int config_btctler_le_acl_packet_length = API_BT_LL_MTU+7;
+#else
 const int config_btctler_le_acl_packet_length = 251;
+#endif
+
 #else
 const uint64_t config_btctler_le_features = SET_ENCRYPTION_CFG | SET_SELECT_PHY_CFG;
 const int config_btctler_le_acl_packet_length = 27;
@@ -170,6 +191,7 @@ const int config_btctler_le_acl_packet_length = 27;
 
 const int config_btctler_le_roles    = SET_SLAVE_ROLS_CFG | SET_MASTER_ROLS_CFG;
 const int config_btctler_le_hw_nums = CONFIG_BT_GATT_CONNECTION_NUM;
+//建议<=10，能收发多少包最终由主机决定）增加more data的个数3->5
 const int config_btctler_le_rx_nums = (CONFIG_BT_GATT_CONNECTION_NUM * 3) + 2;
 const int config_btctler_le_acl_total_nums = (CONFIG_BT_GATT_CONNECTION_NUM * 3) + 1;
 
