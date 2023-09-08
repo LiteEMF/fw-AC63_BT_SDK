@@ -43,13 +43,13 @@ AC695 芯片定义:
 			{PB_06,   pwm_timer2,   (PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch2),VAL2FLD(PWM_ACTIVE,1)},\
 			}
 
-sdk AC6321 芯片定义:
+sdk AC6321/701n 芯片定义:
 #define HW_PWM_MAP {	\
 			{Pn_XX,   NULL, VAL2FLD(PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch0|PWM_CH_H)},\
 			{Pn_XX,   NULL, VAL2FLD(PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch1)},\
 			{Pn_XX,   NULL, VAL2FLD(PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch1|PWM_CH_H)|VAL2FLD(PWM_ACTIVE,1)},\
 			{Pn_XX,   NULL, VAL2FLD(PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch2)|VAL2FLD(PWM_ACTIVE,1)},\
-			}
+			}   
 */
 
 
@@ -72,7 +72,7 @@ sdk AC6321 芯片定义:
  * @brief 单独设置PWM H或L pin的duty
  * 
  * @param pwm_ch 
- * @param timer_ch : BD19 使用 pwm_ch
+ * @param timer_ch : BD19/BR28 使用 pwm_ch
  * @param is_h 1:H, 0:L pin
  * @param duty 
  */
@@ -105,13 +105,13 @@ void mcpwm_set_hl_duty(pwm_ch_num_type pwm_ch, uint8_t timer_ch, uint8_t is_h, u
 *******************************************************************/
 bool hal_pwm_set_duty(uint16_t id, uint8_t duty)
 {
-    #if defined CONFIG_CPU_BD19
+    #if defined CONFIG_CPU_BD19 || defined CONFIG_CPU_BR28
     uint8_t timer_ch = PWM_CH_ATT(id);
     #elif defined CONFIG_CPU_BR23
     uint8_t timer_ch = m_pwm_map[id].peripheral;
     #endif
 
-    if(PWM_ACTIVE_ATT(id)){
+    if(PWM_CH_ATT(id) & PWM_CH_H){
         mcpwm_set_hl_duty(PWM_CH_ATT(id), timer_ch, 1, duty*10000UL/255UL);
     }else{ 
         mcpwm_set_hl_duty(PWM_CH_ATT(id), timer_ch, 0, duty*10000UL/255UL);
@@ -131,7 +131,7 @@ bool hal_pwm_init(uint16_t id, uint8_t duty)
     pwm_p_data.pwm_timer_num = m_pwm_map[id].peripheral;    // 时基选择,  timer1, timer2...
     #endif
 
-    if(PWM_ACTIVE_ATT(id)){
+    if(PWM_CH_ATT(id) & PWM_CH_H){
         #if defined CONFIG_CPU_BR23
         pwm_p_data.h_pin_output_ch_num = 2;
         #endif
@@ -152,7 +152,7 @@ bool hal_pwm_init(uint16_t id, uint8_t duty)
 bool hal_pwm_deinit(uint16_t id)
 {
     // 传通道
-    #if defined CONFIG_CPU_BD19
+    #if defined CONFIG_CPU_BD19 || defined CONFIG_CPU_BR28
         mcpwm_close(PWM_CH_ATT(id));
     #elif defined CONFIG_CPU_BR23
         mcpwm_close(PWM_CH_ATT(id), m_pwm_map[id].peripheral);

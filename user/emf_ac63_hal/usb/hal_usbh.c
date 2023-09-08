@@ -409,6 +409,7 @@ error_t hal_usbh_port_en(uint8_t id,uint8_t en, usb_speed_t* pspeed)
 
         usb_sie_enable(usb_id);//enable sie intr
         // usb_mdelay(20);
+        usb_otg_resume(usb_id);  //打开usb host之后恢复otg检测, 这样不会反复检测接入和拔出usb
 	}else{
 		usb_sie_close(usb_id);
 	}
@@ -583,7 +584,7 @@ error_t hal_usbh_driver_init(uint8_t id)
     m_ep_pbuffer[usb_id][0][1] = ep0_dma[usb_id];
     mem_buf_init(&usbh_mem[usb_id], ep_dma_buf[usb_id], sizeof(ep_dma_buf[usb_id]), 4);
 
-    usb_otg_resume(usb_id);  //打开usb host之后恢复otg检测
+    // usb_otg_resume(usb_id);  //打开usb host之后恢复otg检测
     #if USB_HOST_ASYNC
     usbh_sem_init(usb_id);
     #endif
@@ -603,6 +604,8 @@ error_t hal_usbh_driver_deinit(uint8_t id)
 	#if USB_HOST_ASYNC
 	usbh_sem_del(usb_id);
 	#endif
+
+    usb_otg_resume(usb_id);  //打开usb host之后恢复otg检测
 	return ERROR_SUCCESS;
 }
 void hal_usbh_driver_task(uint32_t dt_ms)

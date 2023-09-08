@@ -26,7 +26,7 @@
 // 			{PB_00,PB_01,PB_02,0,VAL2FLD(IIC_BADU,400000)},	\
 // 			}
 
-//BD19: IIC: CLK  ,  SDA       
+//BD19/BD28: IIC: CLK  ,  SDA       
   	// {IO_PORT_DP   IO_PORT_DM},		//'A'
   	// {IO_PORTA_09  IO_PORTA_10},		//'B'
   	// {IO_PORTA_07  IO_PORTA_08},		//'C'
@@ -137,10 +137,10 @@ bool hal_iic_isr_read(uint8_t id,uint8_t dev_addr,uint16_t addr, uint8_t* buf, u
 }
 bool hal_iic_init(uint8_t id)
 {
-	#if defined CONFIG_CPU_BD19
+	#if defined CONFIG_CPU_BD19  || defined CONFIG_CPU_BR28
 	hw_iic_cfg[0].port[0] = m_iic_map[id].clk;
 	hw_iic_cfg[0].port[1] = m_iic_map[id].sda;
-	#else
+	#elif defined CONFIG_CPU_BR23
 	extern const struct iic_iomapping hwiic_iomap[IIC_HW_NUM][IIC_PORT_GROUP_NUM];
 	for(uint8_t i=0; i<IIC_PORT_GROUP_NUM; i++){
 		if((hwiic_iomap[0][i].scl == m_iic_map[id].clk) && (hwiic_iomap[0][i].sda == m_iic_map[id].sda)){

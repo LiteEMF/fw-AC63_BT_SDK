@@ -46,6 +46,7 @@ uint8_t usbd_ep_buf[0x200]  __attribute__((aligned(8)));
 static struct usb_ep_addr_t usb_ep_addr  SEC(.usb_config_var);
 static uint8_t ep0_dma_buffer[USBD_ENDP0_MTU + 4] __attribute__((aligned(4))) SEC(.usb_h_dma);
 static uint8_t* m_ep_pbuffer[USBD_ENDP_NUM][2];
+static uint8_t* bulk_ep_pbuffer;        //优化内存用
 
 volatile uint8_t setup_phase = 1;
 
@@ -68,19 +69,15 @@ void usb_isr(const usb_dev id)
     intr_rx &= intr_rxe;
 
     if (intr_usb & INTRUSB_SUSPEND) {
-        logd("usbd suspend\n");
-
-        usb_sie_close(id);
+        // usb_sie_close(id);
         usbd_suspend_event(id);
     }
     if (intr_usb & INTRUSB_RESET_BABBLE) {
-        logd("usbd reset\n");
+        u32 reg = usb_read_power(id);
+        usb_write_power(id, (reg | INTRUSB_SUSPEND | INTRUSB_RESUME));//enable suspend resume
         usbd_reset_event(id);
-        // u32 reg = usb_read_power(id);
-        // usb_write_power(id, (reg | INTRUSB_SUSPEND | INTRUSB_RESUME));//enable suspend resume
     }
     if (intr_usb & INTRUSB_RESUME) {
-        logd("usbd resume\n");
         usbd_resume_event(id);
     }
 
@@ -125,19 +122,20 @@ void usb_isr(const usb_dev id)
                 usbd_endp_in_event(id, 0x80);
             }
         }
-    }else{
-        for (int i = 1; i < USBD_ENDP_NUM; i++) {
-            if (intr_tx & BIT(i)) {
-                usbd_endp_in_event(id, TUSB_DIR_IN_MASK | i);
-            }
-        }
-
-        for (int i = 1; i < USBD_ENDP_NUM; i++) {
-            if (intr_rx & BIT(i)) {
-                usbd_endp_out_event(id, i, usb_read_rxcount(id, i));
-            }
+    }
+    
+    for (int i = 1; i < USBD_ENDP_NUM; i++) {
+        if (intr_tx & BIT(i)) {
+            usbd_endp_in_event(id, TUSB_DIR_IN_MASK | i);
         }
     }
+
+    for (int i = 1; i < USBD_ENDP_NUM; i++) {
+        if (intr_rx & BIT(i)) {
+            usbd_endp_out_event(id, i, usb_read_rxcount(id, i));
+        }
+    }
+
     __asm__ volatile("csync");
 }
 
@@ -145,8 +143,9 @@ void usb_sof_isr(const usb_dev id)
 {
     usb_sof_clr_pnd(id);
     static u32 sof_count = 0;
-    if ((sof_count++ % 1000) == 0) {
-        logd("sof 1s isr frame:%d", usb_read_sofframe(id));
+    usbd_sof_event(id);
+    if ((sof_count++ % 10000) == 0) {
+        // logd("sof 10s isr frame:%d", usb_read_sofframe(id));
     }
 }
 
@@ -296,58 +295,32 @@ uint8_t *hal_usbd_get_endp_buffer(uint8_t id, uint8_t ep)
 
 error_t hal_usbd_endp_dma_init(uint8_t id)
 {
+    bulk_ep_pbuffer = NULL;
     memset(m_ep_pbuffer, 0, sizeof(m_ep_pbuffer));
     m_ep_pbuffer[0][0] = ep0_dma_buffer;
     m_ep_pbuffer[0][1] = ep0_dma_buffer;
     mem_buf_init(&usbd_mem_buf, usbd_ep_buf, sizeof(usbd_ep_buf), 8);
-
 	return ERROR_SUCCESS;
 }
 
 error_t hal_usbd_endp_open(uint8_t id, usb_endp_t *pendp)
 {
     uint8_t ep_addr = pendp->addr;
+    uint8_t ep;
     if(0 == ep_addr) return ERROR_FAILE;
-
-    if(TUSB_DIR_IN == pendp->dir){
-		switch(pendp->type){
-        case TUSB_ENDP_TYPE_ISOCH:
-            m_ep_pbuffer[ep_addr][1] = mem_buf_alloc(&usbd_mem_buf, pendp->mtu + 4);
-            usb_g_ep_config(id, ep_addr | TUSB_DIR_IN_MASK, TUSB_ENDP_TYPE_ISOCH, 1, m_ep_pbuffer[ep_addr][1], pendp->mtu);
-            usb_enable_ep(id, ep_addr);
-            break;
-        case TUSB_ENDP_TYPE_BULK:
-            m_ep_pbuffer[ep_addr][1] = mem_buf_alloc(&usbd_mem_buf, 2*(pendp->mtu + 4));
-            usb_g_ep_config(id, ep_addr | TUSB_DIR_IN_MASK, TUSB_ENDP_TYPE_BULK, 1, m_ep_pbuffer[ep_addr][1], pendp->mtu);
-            usb_enable_ep(id, ep_addr);
-            break;
-        case TUSB_ENDP_TYPE_INTER:
-            m_ep_pbuffer[ep_addr][1] = mem_buf_alloc(&usbd_mem_buf, pendp->mtu + 4);
-            usb_g_ep_config(id, ep_addr | TUSB_DIR_IN_MASK, TUSB_ENDP_TYPE_INTER, 1, m_ep_pbuffer[ep_addr][1], pendp->mtu);
-            usb_enable_ep(id, ep_addr);
-            break;
-		}
-        logd("endp%x in open addr=%x\n",ep_addr | TUSB_DIR_IN_MASK, (uint32_t)(m_ep_pbuffer[ep_addr][1]));
-	}else{     //out
-		switch(pendp->type){
-        case TUSB_ENDP_TYPE_ISOCH:
-            m_ep_pbuffer[ep_addr][0] = mem_buf_alloc(&usbd_mem_buf, pendp->mtu + 4);
-            usb_g_ep_config(id, ep_addr , TUSB_ENDP_TYPE_ISOCH, 1, m_ep_pbuffer[ep_addr][0], pendp->mtu);
-            usb_enable_ep(id, ep_addr);
-            break;
-        case TUSB_ENDP_TYPE_BULK:        //BULK out 如果和BULK in 不同时使用(比如U盘协议),可以优化共用BULK in buf
-            m_ep_pbuffer[ep_addr][0] = m_ep_pbuffer[ep_addr][1];    // mem_buf_alloc(&usbd_mem_buf, 2*(pendp->mtu + 4));
-            usb_g_ep_config(id, ep_addr, TUSB_ENDP_TYPE_BULK, 1, m_ep_pbuffer[ep_addr][0], pendp->mtu);
-            usb_enable_ep(id, ep_addr);
-            break;
-        case TUSB_ENDP_TYPE_INTER:
-            m_ep_pbuffer[ep_addr][0] = mem_buf_alloc(&usbd_mem_buf, pendp->mtu + 4);
-            usb_g_ep_config(id, ep_addr, TUSB_ENDP_TYPE_INTER, 1, m_ep_pbuffer[ep_addr][0], pendp->mtu);
-            usb_enable_ep(id, ep_addr);
-            break;
-		}
-        logd("endp%x out open addr=%x\n",ep_addr, (uint32_t)(m_ep_pbuffer[ep_addr][0]));
-	}
+    
+    ep = ep_addr | ((TUSB_DIR_IN == pendp->dir)? TUSB_DIR_IN_MASK:0);
+    if(NULL == hal_usbd_get_endp_buffer(id,ep)){
+        if(TUSB_ENDP_TYPE_BULK == pendp->type){ //in out共用buf
+            if(NULL == bulk_ep_pbuffer) bulk_ep_pbuffer = mem_buf_alloc(&usbd_mem_buf, 2*(pendp->mtu + 4));
+            m_ep_pbuffer[ep_addr][pendp->dir] = bulk_ep_pbuffer;
+        }else{
+            m_ep_pbuffer[ep_addr][pendp->dir] = mem_buf_alloc(&usbd_mem_buf, pendp->mtu + 4);
+        }
+    }
+    usb_g_ep_config(id, ep, pendp->type, 1, m_ep_pbuffer[ep_addr][pendp->dir], pendp->mtu);
+    usb_enable_ep(id, ep_addr);
+    logd("endp%x open addr=%x\n",ep, (uint32_t)(m_ep_pbuffer[ep_addr][pendp->dir]));
     
 	return ERROR_SUCCESS;
 }
@@ -381,7 +354,7 @@ error_t hal_usbd_endp_ack(uint8_t id, uint8_t ep, uint16_t len)
         break;
     }
     uint32_t reg = usb_read_csr0(id);    
-    logd("csr0=%x\n",reg);
+    // logd("csr0=%x\n",reg);
 
 	return ERROR_SUCCESS;
 }
@@ -481,6 +454,8 @@ error_t hal_usbd_out(uint8_t id, uint8_t ep, uint8_t* buf, uint16_t* plen)
 		usbd_class_t *pclass = usbd_class_find_by_ep(id, ep);
 		if(NULL != pclass){
 			if(TUSB_ENDP_TYPE_ISOCH == pclass->endpout.type ){
+                uint8_t* ep_buffer = usbd_get_endp_buffer(id, ep);
+                if(buf == ep_buffer) buf = NULL;            //非拷贝读
 				*plen = usb_g_iso_read(id, ep, buf, *plen, 0);
 			}else if(TUSB_ENDP_TYPE_BULK == pclass->endpout.type ){
                 //logd("len =%d usbd_ep_buf=%x\n",*plen,(uint32_t)usbd_ep_buf);dumpd(usbd_ep_buf, 64);
@@ -514,11 +489,8 @@ error_t hal_usbd_set_address(uint8_t id,uint8_t address)
 
 error_t hal_usbd_init(uint8_t id)
 {
+    hal_usbd_endp_dma_init(id);
     memset(&usb_ep_addr, 0, sizeof(usb_ep_addr));
-    memset(&usbd_mem_buf, 0, sizeof(usbd_mem_buf));
-    memset(m_ep_pbuffer, 0, sizeof(m_ep_pbuffer));
-    m_ep_pbuffer[0][0] = ep0_dma_buffer;
-    m_ep_pbuffer[0][1] = ep0_dma_buffer;
 
     usb_var_init(id, &usb_ep_addr);
 
@@ -535,8 +507,8 @@ error_t hal_usbd_init(uint8_t id)
     usb_clr_intr_rxe(id, -1);
     usb_set_intr_txe(id, 0);
     usb_set_intr_rxe(id, 0);
-    usb_g_isr_reg(id, 3, 0);
-    /* usb_sof_isr_reg(id,3,0); */
+    usb_g_isr_reg(id, 3, USB_CPU);
+    usb_sof_isr_reg(id,3,USB_CPU);
     /* usb_sofie_enable(id); */
 
 	return ERROR_SUCCESS;
@@ -583,6 +555,7 @@ static uint8_t ep0_dma_buffer[USBD_ENDP0_MTU + 4] __attribute__((aligned(4))) SE
  */
 u32 usb_otg_sof_check_init(const usb_dev id)
 {
+	/* return 0;// */
     u32 ep = 0;
 
     logd("usb_otg_sof_check_init\n");
@@ -595,6 +568,7 @@ u32 usb_otg_sof_check_init(const usb_dev id)
     usb_sof_clr_pnd(id);
     return 1;
 }
+
 
 #endif
 

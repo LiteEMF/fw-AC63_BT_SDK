@@ -116,7 +116,7 @@ error_t hal_otg_init(uint8_t id)
 	if(!otg_regist){
 		otg_regist = true;
         logd("register_sys_event_handler\n");
-		register_sys_event_handler(SYS_DEVICE_EVENT, 0, 2, usb_event_handler);
+		register_sys_event_handler(SYS_DEVICE_EVENT, 0, 3, usb_event_handler);
 	}
 	return ERROR_SUCCESS;
 }

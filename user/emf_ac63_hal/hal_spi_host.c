@@ -112,7 +112,7 @@ bool hal_spi_host_init(uint8_t id)
 	struct spi_platform_data *pspi;
 
 	if(spi == SPI0){
-		#if defined CONFIG_CPU_BD19
+		#if defined CONFIG_CPU_BD19 || defined CONFIG_CPU_BR28
 		logd("bd19 spi0 not support\n");
 		return false;
 		#endif
@@ -125,13 +125,13 @@ bool hal_spi_host_init(uint8_t id)
 		return false;
 	}
 
-	#if defined CONFIG_CPU_BD19
+	#if defined CONFIG_CPU_BD19 || defined CONFIG_CPU_BR28
 	pspi->port[0] = m_spi_map[id].clk;
 	pspi->port[1] = m_spi_map[id].mosi;
 	pspi->port[2] = m_spi_map[id].miso;
 	pspi->port[3] = PIN_NULL;
 	pspi->port[4] = PIN_NULL;
-	#else
+	#elif defined CONFIG_CPU_BR23
 	extern const struct spi_io_mapping spi_io_map[SPI_MAX_HW_NUM];
 	for(uint8_t i=0; i<spi_io_map[spi].num; i++){
 		if(m_spi_map[id].clk == spi_io_map[spi].io->clk_pin){
