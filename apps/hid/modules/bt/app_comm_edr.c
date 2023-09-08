@@ -54,7 +54,13 @@
 
 #if TCFG_USER_EDR_ENABLE
 
-#define SNIFF_ENABLE                  1 //是否允许主动进入sniff
+#if EDR_EMITTER_EN
+    #define SNIFF_ENABLE                  0 //主机不主动请求sniff
+#elif defined EDR_SNIFF_ENABLE
+    #define SNIFF_ENABLE                  EDR_SNIFF_ENABLE
+#else
+    #define SNIFF_ENABLE                  1 //是否允许主动进入sniff
+#endif
 
 //默认配置
 static const edr_sniff_par_t edr_default_sniff_param = {
@@ -270,15 +276,15 @@ void btstack_edr_start_after_init(int param)
 
 #if EDR_EMITTER_EN
     bt_emitter_init();
-#if(EDR_EMITTER_PAGESCAN_ONLY == 0)
+	#if(EDR_EMITTER_PAGESCAN_ONLY == 0)
     inquiry_result_handle_register(bt_emitter_search_result);
     bt_emitter_role_set(BT_EMITTER_EN);
-#else
-    bt_wait_connect_active_enable(1);
-#endif
+	#else
+    bt_wait_phone_connect_control(1);
+	#endif
 
 #else
-    bt_wait_connect_active_enable(1);
+    bt_wait_phone_connect_control(1);
 #endif
 
 #if SNIFF_ENABLE

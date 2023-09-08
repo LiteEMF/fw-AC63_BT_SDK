@@ -821,6 +821,8 @@ static bool __resolve_adv_report(adv_report_t *report_pt, u16 len)
     //log_info("adv_type=%d...",report_pt->event_type);log_info_hexdump(report_pt->address, 6);
     #endif
 
+
+    //回连在这里
     if (__check_device_is_match(report_pt->event_type, CLI_CREAT_BY_ADDRESS, report_pt->address, 6, &match_cfg)) {
         find_remoter = 1;
         log_info("catch mac ok\n");
@@ -918,14 +920,14 @@ just_creat:
     #ifdef LITEEMF_ENABLED	
     if(0 == find_remoter){
         if(m_trps & BT0_SUPPORT & BIT(BT_BLEC_RF)){
-            api_bt_event(BT_ID0,BT_BLEC_RF,BT_EVT_RX,&evt);    
+            api_bt_event(BT_ID0,BT_BLEC_RF,BT_EVT_SCAN,&evt);    
             #if (BT0_SUPPORT & BIT_ENUM(TR_BLE_RFC))
             if(0 == memcmp(ble_rfc_scan_result.mac, report_pt->address,6)){
                 find_remoter = true;         //匹配到设备
             }
             #endif
         }else{
-            api_bt_event(BT_ID0,BT_BLEC,BT_EVT_RX,&evt);   
+            api_bt_event(BT_ID0,BT_BLEC,BT_EVT_SCAN,&evt);   
             #if (BT0_SUPPORT & BIT_ENUM(TR_BLEC))
             if(0 == memcmp(blec_scan_result.mac, report_pt->address,6)){
                 find_remoter = true;         //匹配到设备

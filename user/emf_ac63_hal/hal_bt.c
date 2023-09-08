@@ -56,8 +56,8 @@ static const ble_init_cfg_t ble_default_config = {
     #define SNIFF_MODE_TYPE               SNIFF_MODE_ANCHOR
     #define SNIFF_CNT_TIME                1/////<空闲100mS之后进入sniff模式
 
-    #define SNIFF_MAX_INTERVALSLOT        12	//从机anchor point锚点间隔,间隔到了就会唤醒收发数据  time=n*0.625ms
-    #define SNIFF_MIN_INTERVALSLOT        12
+    #define SNIFF_MAX_INTERVALSLOT        8	//从机anchor point锚点间隔,间隔到了就会唤醒收发数据  time=n*0.625ms
+    #define SNIFF_MIN_INTERVALSLOT        8
     #define SNIFF_ATTEMPT_SLOT            2		//锚点时间到唤醒后保持监听M->S slot个数, 必须<=SNIFF_MIN_INTERVALSLOT/2(注意监听要包含S-M slot,所以时间是SLOT*(2+1))
     #define SNIFF_TIMEOUT_SLOT            1		//监听到数据后,延长监听的格式,防止太快进入休眠 
     #define SNIFF_CHECK_TIMER_PERIOD      100
@@ -110,7 +110,7 @@ static const edr_init_cfg_t edr_default_config = {
 extern void ble_set_pair_addrinfo(u8 *addr_info);
 
 //选择蓝牙从机模式
-void select_btmode(uint16_t trps)
+bool hal_bt_select_mode(uint8_t id,uint16_t trps)
 {
     uint8_t i;
     api_bt_ctb_t* bt_ctbp;
@@ -119,13 +119,13 @@ void select_btmode(uint16_t trps)
 
     #if BT0_SUPPORT & (BIT_ENUM(TR_BLE) | BIT_ENUM(TR_BLE_RF))
     u8 tmp_addr_info[7];
-    if(m_trps & BT0_SUPPORT & BIT(TR_BLE_RF)){
+    if(trps & BT0_SUPPORT & BIT(TR_BLE_RF)){
         if (7 == syscfg_read(CFG_AAP_MODE_24G_ADDR, tmp_addr_info, 7)) {    //切换恢复ble配对信息
             ble_set_pair_addrinfo(tmp_addr_info);
         } else {
             ble_set_pair_addrinfo(NULL);
         }
-    }else if(m_trps & BT0_SUPPORT & BIT(TR_BLE)) {
+    }else if(trps & BT0_SUPPORT & BIT(TR_BLE)) {
         if (7 == syscfg_read(CFG_AAP_MODE_BLE_ADDR, tmp_addr_info, 7)) {    //切换恢复ble配对信息
             ble_set_pair_addrinfo(tmp_addr_info);
         } else {
@@ -133,7 +133,7 @@ void select_btmode(uint16_t trps)
         }
     }
 
-    if(m_trps & BT0_SUPPORT & BIT(TR_BLE_RF)){
+    if(trps & BT0_SUPPORT & BIT(TR_BLE_RF)){
         bt_ctbp = api_bt_get_ctb(TR_BLE_RF);
 	    
         logi("---------app select 24g--------\n");
@@ -149,7 +149,7 @@ void select_btmode(uint16_t trps)
         if(NULL != bt_ctbp){
             hal_bt_enable(BT_ID0,TR_BLE_RF,bt_ctbp->enable);
         }
-    }else if(m_trps & BT0_SUPPORT & BIT(TR_BLE)) {
+    }else if(trps & BT0_SUPPORT & BIT(TR_BLE)) {
         logi("---------app select ble--------\n");
         bt_ctbp = api_bt_get_ctb(TR_BLE);
         rf_set_24g_hackable_coded(0);
@@ -167,7 +167,7 @@ void select_btmode(uint16_t trps)
 
 
     #if BT0_SUPPORT & BIT_ENUM(TR_EDR)
-    if(m_trps & BT0_SUPPORT & BIT(TR_EDR)) {
+    if(trps & BT0_SUPPORT & BIT(TR_EDR)) {
         #if BT0_SUPPORT & BIT_ENUM(TR_EDR)
         logi("---------app select edr--------\n");
         hal_bt_enable(BT_ID0,BT_EDR,bt_ctbp->enable);          //打开edr
@@ -176,6 +176,7 @@ void select_btmode(uint16_t trps)
         hal_bt_enable(BT_ID0, BT_EDR, 0);
     }
     #endif
+    return true;
 }
 
 
@@ -279,7 +280,7 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
                 api_bt_event(BT_ID0, (bt_t)id, BT_EVT_INIT, NULL);
             }
         }
-        select_btmode(m_trps);
+        hal_bt_select_mode(BT_ID0,m_trps);
         break;
 
     #if BT0_SUPPORT & BIT_ENUM(TR_EDR)
@@ -395,27 +396,24 @@ bool hal_bt_is_bonded(uint8_t id, bt_t bt)
     #if BT0_SUPPORT & (BIT_ENUM(TR_BLE) | BIT_ENUM(TR_BLE_RF))
     case BT_BLE: 	
     case BT_BLE_RF: 			//BLE模拟2.4G
+        extern bool multi_server_is_bonded(void);
+        return  multi_server_is_bonded();
         break;
     #endif
     #if BT0_SUPPORT & (BIT_ENUM(TR_BLEC) | BIT_ENUM(TR_BLE_RFC))
     case BT_BLEC:
     case BT_BLEC_RF:
+        ret = multi_client_is_bonded();
         break;
     #endif
     #if BT0_SUPPORT & BIT_ENUM(TR_EDR)
-    case BT_EDR: 	    
+    case BT_EDR: 	
+        extern u8 connect_last_device_from_vm();    
+        return  connect_last_device_from_vm();
         break;
     #endif
     #if BT0_SUPPORT & BIT_ENUM(TR_EDRC)
     case BT_EDRC:
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_RF)
-    case BT_RF:
-        break;
-    #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_RFC)
-    case BT_RFC:
         break;
     #endif
     }   
@@ -454,7 +452,9 @@ bool hal_bt_debond(uint8_t id, bt_t bt)
     #endif
     #if BT0_SUPPORT & BIT_ENUM(TR_EDR)
     case BT_EDR: 	 
-          ret = !delete_last_device_from_vm();   
+        ret = !delete_last_device_from_vm();   
+        user_hid_disconnect();
+        bt_wait_phone_connect_control(1);                 //开启蓝牙可发现可链接
         break;
     #endif
     #if BT0_SUPPORT & BIT_ENUM(TR_EDRC)

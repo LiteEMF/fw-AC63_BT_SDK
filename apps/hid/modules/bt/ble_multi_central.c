@@ -118,16 +118,33 @@ static const target_uuid_t  jl_multi_search_uuid_table[] = {
     // CHARACTERISTIC,  ae02, NOTIFY,
 
     {
+        #ifdef BTC_SEARCH_UUID16
+        .services_uuid16 = BTC_SEARCH_UUID16,
+        #else
         .services_uuid16 = 0xae30,
+        #endif
+        #ifdef BTC_SEARCH_WRITE_CHARA_UUID16
+        .characteristic_uuid16 = BTC_SEARCH_WRITE_CHARA_UUID16,
+        #else
         .characteristic_uuid16 = 0xae01,
+        #endif
         .opt_type = ATT_PROPERTY_WRITE_WITHOUT_RESPONSE,
     },
 
     {
+        #ifdef BTC_SEARCH_UUID16
+        .services_uuid16 = BTC_SEARCH_UUID16,
+        #else
         .services_uuid16 = 0xae30,
+        #endif
+        #ifdef BTC_SEARCH_NOTIFY_CHARA_UUID16
+        .characteristic_uuid16 = BTC_SEARCH_NOTIFY_CHARA_UUID16,
+        #else
         .characteristic_uuid16 = 0xae02,
+        #endif
         .opt_type = ATT_PROPERTY_NOTIFY,
     },
+
 
     //for uuid128,sample
     //	PRIMARY_SERVICE, 0000F530-1212-EFDE-1523-785FEABCD123
@@ -165,7 +182,7 @@ static const client_match_cfg_t multi_match_device_table[] = {
 };
 
 //带绑定的设备搜索
-static client_match_cfg_t *multi_bond_device_table;
+static client_match_cfg_t *multi_bond_device_table;     //匹配规则+配对信息保存
 static u16  bond_device_table_cnt;
 
 bool multi_client_user_server_write(uint8_t *packet, uint16_t size)
@@ -412,6 +429,12 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
         // log_info("GATT_COMM_EVENT_CAN_SEND_NOW\n");
         break;
 
+    case GATT_COMM_EVENT_SCAN_ADV_REPORT:
+        putchar('V');
+        /* log_info("adv_report_data(%d):",size); */
+        /* put_buf(packet,size);  */
+        break;
+
     case GATT_COMM_EVENT_CONNECTION_COMPLETE:
         log_info("connection_handle:%04x\n", little_endian_read_16(packet, 0));
         log_info("con_interval = %d\n", little_endian_read_16(ext_param, 14 + 0));
@@ -429,7 +452,7 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
         cur_conn_info.head_tag = 0;
         #ifdef LITEEMF_ENABLED
         bt_evt_con_t evt;
-        memcpy(evt.mac[6], cur_conn_info.peer_address_info, 6);
+        memcpy(evt.mac, cur_conn_info.peer_address_info, 6);
 	    evt.name[0] = 0;
         if(m_trps & BT0_SUPPORT & BIT(BT_BLEC_RF)){
             api_bt_event(BT_ID0,BT_BLEC_RF,BT_EVT_CONNECTED,NULL); 

@@ -71,10 +71,19 @@ extern "C" {
 
 
 		//bt 
-		#define BT0_SUPPORT					(BIT_ENUM(TR_BLE))
+		#define BT0_SUPPORT					(BIT_ENUM(TR_BLE) | BIT_ENUM(TR_EDR))
+		// #define BT0_SUPPORT					(BIT_ENUM(TR_BLE) | BIT_ENUM(TR_BLEC))
 		// #define BLE_HID_SUPPORT				(BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_SWITCH))
-		#define BLE_HID_SUPPORT				(BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_MOUSE))
-		#define EDR_HID_SUPPORT				BIT_ENUM(HID_TYPE_KB)
+		// #define BLE_HID_SUPPORT				(BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_MOUSE))
+		#define EDR_HID_SUPPORT				(BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_MOUSE))
+
+		#define BTC_SEARCH_NAME						"AC632N"
+		// #define BTC_SEARCH_RSSI						-50
+		// #define BTC_SEARCH_MAC						"JL6321"
+
+		#define BTC_SEARCH_UUID16			    	0xae30
+		#define BTC_SEARCH_WRITE_CHARA_UUID16		0xae01
+		#define BTC_SEARCH_NOTIFY_CHARA_UUID16		0xae01
 
 		#define DEV_TRPS_DEFAULT				BT0_SUPPORT
 		#define SW_VERSION                     	0x01
