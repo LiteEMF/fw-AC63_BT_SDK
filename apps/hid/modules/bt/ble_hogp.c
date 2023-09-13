@@ -45,6 +45,7 @@
 #include "gatt_common/le_gatt_common.h"
 #include "app_comm_bt.h"
 #ifdef LITEEMF_ENABLED
+#include  "app/gamepad/app_gamepad.h"
 #include "api/bt/api_bt.h"
 #include "api/api_log.h"
 #endif
@@ -802,7 +803,7 @@ static uint16_t hogp_att_read_callback(hci_con_handle_t connection_handle, uint1
             uint16_t vid=PNP_VID,pid=PNP_PID;
             bt_ctbp = api_bt_get_ctb(BT_BLE);
             if(NULL != bt_ctbp){
-                app_gamepad_get_special_vid((trp_t)BT_BLE, bt_ctbp->hid_types, &vid, &pid);
+                app_gamepad_get_vid_pid((trp_t)BT_BLE, bt_ctbp->hid_types, &vid, &pid);
                 PnP_ID[1] = vid & 0xFF;
                 PnP_ID[2] = vid >> 8;
                 PnP_ID[3] = pid & 0xFF;

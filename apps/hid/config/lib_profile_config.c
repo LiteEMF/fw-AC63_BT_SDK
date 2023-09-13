@@ -124,8 +124,105 @@ static const hid_sdp_info_t hid_sdp_info_config = {
     .extra_len              = 0,
 };
 
+#if defined LITEEMF_ENABLED
+#if HIDD_SUPPORT & HID_XBOX_MASK
+static const hid_sdp_info_t xbox_sdp_info_config = {
+    .vid_private = XBOX_VID,
+    .pid_private = XBOX_BT_PID,
+    .ver_private = PNP_PID_VERSION,
 
-#define NEW_SDP_PNP_DATA_VER     1  //for 兼容性
+    .sub_class           = 0x80,
+    .country_code        = 0x21,
+    .virtual_cable       = 0x01,
+    .reconnect_initiate  = 0x01,
+    .sdp_disable         = 0x00,
+    .battery_power       = 0x01,
+    .remote_wake         = 0x01,
+    .normally_connectable = 0x01,
+    .boot_device         = 0x01,
+    .version             = 0x0100,
+    .parser_version      = 0x0111,
+    .profile_version     = 0x0100,
+    .supervision_timeout = 0x1f40,
+    .language            = 0x0409,
+    .bt_string_offset    = 0x0100,
+    .descriptor_len      = 0,
+    .descriptor          = NULL,
+    .service_name        = "Xbox Bluetooth Gamepad",
+    .service_description = "Gamepad",
+    .provide_name        = "Microsof Corporatio",
+    .sdp_request_respone_callback = NULL,
+    .extra_buf              = NULL,
+    .extra_len              = 0,
+};
+#endif
+
+#if HIDD_SUPPORT & HID_PS_MASK
+static const hid_sdp_info_t ps_sdp_info_config = {
+    .vid_private = PS_VID,
+    .pid_private = PS4_PID,
+    .ver_private = PNP_PID_VERSION,
+
+    .sub_class           = 0x80,
+    .country_code        = 0x21,
+    .virtual_cable       = 0x01,
+    .reconnect_initiate  = 0x01,
+    .sdp_disable         = 0x00,
+    .battery_power       = 0x01,
+    .remote_wake         = 0x01,
+    .normally_connectable = 0x01,
+    .boot_device         = 0x01,
+    .version             = 0x0100,
+    .parser_version      = 0x0111,
+    .profile_version     = 0x0100,
+    .supervision_timeout = 0x1f40,
+    .language            = 0x0409,
+    .bt_string_offset    = 0x0100,
+    .descriptor_len      = 0,
+    .descriptor          = NULL,
+    .service_name        = "Wireless Controlle",
+    .service_description = "Game Controlle",
+    .provide_name        = "Son Interactive Entertainmen",
+    .sdp_request_respone_callback = NULL,
+    .extra_buf              = NULL,
+    .extra_len              = 0,
+};
+#endif
+
+#if HIDD_SUPPORT & HID_SWITCH_MASK
+static const hid_sdp_info_t switch_sdp_info_config = {
+    .vid_private = SWITCH_VID,
+    .pid_private = SWITCH_PID,
+    .ver_private = 0X0020,
+
+    .sub_class           = 0x08,
+    .country_code        = 0x21,
+    .virtual_cable       = 0x01,
+    .reconnect_initiate  = 0x01,
+    .sdp_disable         = 0x00,
+    .battery_power       = 0x01,
+    .remote_wake         = 0x01,
+    .normally_connectable = 0x00,
+    .boot_device         = 0x00,
+    .version             = 0x0101,
+    .parser_version      = 0x0111,
+    .profile_version     = 0x0100,
+    .supervision_timeout = 3200,
+    .language            = 0x0409,
+    .bt_string_offset    = 0x0100,
+    .descriptor_len      = 0,
+    .descriptor          = NULL,
+    .service_name        = "Wireless Gamepad",
+    .service_description = "Gamepad",
+    .provide_name        = "Nintendo",
+    .sdp_request_respone_callback = NULL,
+    .extra_buf              = NULL,
+    .extra_len              = 0,
+};
+#endif
+#endif
+
+#define NEW_SDP_PNP_DATA_VER     0  //for 兼容性
 
 #if (USER_SUPPORT_PROFILE_HID==1)
 u8 sdp_make_pnp_service_data[0x60];
@@ -148,7 +245,7 @@ SDP_RECORD_HANDLER_REGISTER(pnp_sdp_record_item) = {
 
 #if (USER_SUPPORT_PROFILE_HID==1)
 u8 hid_profile_support = 1;
-u8 sdp_make_hid_service_data[0x260];
+u8 sdp_make_hid_service_data[0x280];
 SDP_RECORD_HANDLER_REGISTER(hid_sdp_record_item) = {
     .service_record = (u8 *)sdp_make_hid_service_data,
     .service_record_handle = 0x00010006,
@@ -168,7 +265,31 @@ void hid_sdp_init(const u8 *hid_descriptor, u16 size)
 #if (USER_SUPPORT_PROFILE_HID==1)
     int real_size;
     /*reset info config,在生成sdp数组接口前配置*/
+    #if defined LITEEMF_ENABLED          //动态修改PID VID
+    api_bt_ctb_t* bt_ctbp;
+	bt_ctbp = api_bt_get_ctb(BT_EDR);
+	if(NULL != bt_ctbp){
+        if(bt_ctbp->types & BIT(DEV_TYPE_HID)){
+            if(bt_ctbp->hid_types & HID_XBOX_MASK){
+                #if HIDD_SUPPORT & HID_XBOX_MASK
+                sdp_diy_set_config_hid_info(&xbox_sdp_info_config);
+                #endif
+            }else if(bt_ctbp->hid_types & HID_PS_MASK){
+                #if HIDD_SUPPORT & HID_PS_MASK
+                sdp_diy_set_config_hid_info(&ps_sdp_info_config);
+                #endif
+            }else if(bt_ctbp->hid_types & HID_SWITCH_MASK){
+                #if HIDD_SUPPORT & HID_SWITCH_MASK
+                sdp_diy_set_config_hid_info(&switch_sdp_info_config);
+                #endif
+            }else{
+                sdp_diy_set_config_hid_info(&hid_sdp_info_config);
+            }
+        }
+    }
+    #else
     sdp_diy_set_config_hid_info(&hid_sdp_info_config);
+    #endif
 
 #if (NEW_SDP_PNP_DATA_VER == 0)
     real_size = sdp_create_diy_device_ID_service(sdp_make_pnp_service_data, sizeof(sdp_make_pnp_service_data));
@@ -187,7 +308,7 @@ void hid_sdp_init(const u8 *hid_descriptor, u16 size)
 u8 update_eir_data_hook(u8 *eir_data, u8 len)
 {   
     printf("===eir_data(%d)\n", len); 
-    #if (BT0_SUPPORT & BIT_ENUM(TR_EDR)) && (EDR_HID_SUPPORT & BIT(HID_TYPE_SWITCH))
+    #if (BT0_SUPPORT & BIT_ENUM(TR_EDR)) && (EDR_HID_SUPPORT & BIT_ENUM(HID_TYPE_SWITCH))
     api_bt_ctb_t *bt_ctbp = api_bt_get_ctb(TR_EDR);
     if(bt_ctbp->hid_types & BIT(HID_TYPE_SWITCH)){
         /*可修改eir_data的内容*/

@@ -33,7 +33,7 @@ extern "C" {
 			{2, VAL2FLD(TIMER_FREQ,1000)|VAL2FLD(TIMER_PRI,1)},	}
 			
 		// uart
-		#define TCFG_UART0_TX_PORT  				IO_PORTA_00
+		#define TCFG_UART0_TX_PORT  				IO_PORTA_05
 		//#define HW_UART_MAP {\
 			{PA_00, PIN_NULL, 0, 0, 0, VAL2FLD(UART_BAUD,1000000)}}
 

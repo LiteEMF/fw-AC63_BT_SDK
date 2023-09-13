@@ -41,6 +41,8 @@
 /*******************************************************************************************************************
 **	static Parameters
 ********************************************************************************************************************/
+uint8_t bas_mac[6];
+
 #if TCFG_USER_BLE_ENABLE
 static const ble_init_cfg_t ble_default_config = {
     .same_address = 0,
@@ -109,6 +111,12 @@ static const edr_init_cfg_t edr_default_config = {
 ******************************************************************************************************/
 extern void ble_set_pair_addrinfo(u8 *addr_info);
 
+
+void bt_sniff_param_hook(u8 *addr, u16 t_sniff)
+{
+    logd_g("bt edr sniff = %d...\n",t_sniff);
+}
+
 //选择蓝牙从机模式
 bool hal_bt_select_mode(uint8_t id,uint16_t trps)
 {
@@ -169,6 +177,7 @@ bool hal_bt_select_mode(uint8_t id,uint16_t trps)
     #if BT0_SUPPORT & BIT_ENUM(TR_EDR)
     if(trps & BT0_SUPPORT & BIT(TR_EDR)) {
         #if BT0_SUPPORT & BIT_ENUM(TR_EDR)
+        bt_ctbp = api_bt_get_ctb(TR_EDR);
         logi("---------app select edr--------\n");
         hal_bt_enable(BT_ID0,BT_EDR,bt_ctbp->enable);          //打开edr
 		#endif
@@ -180,7 +189,7 @@ bool hal_bt_select_mode(uint8_t id,uint16_t trps)
 }
 
 
-//BLE + 2.4g 从机接收数据
+//BLE + hid 从机接收数据
 void ble_hid_transfer_channel_recieve(uint8_t* p_attrib_value,uint16_t length)
 {
     bt_evt_rx_t evt;
@@ -378,13 +387,11 @@ int sys_bt_event_handler(struct sys_event *event)
 ******************************************************************************************************/
 bool hal_bt_get_mac(uint8_t id, bt_t bt, uint8_t *buf )
 {
-    bool ret = false;
-
     if(BT_ID0 != id) return false;
 
-    memcpy(buf,bt_get_mac_addr(),6);        //获取基础mac地址, EDR地址为基地址
+    memcpy(buf,bas_mac,6);        //获取基础mac地址, EDR地址为基地址
 
-    return ret;
+    return true;
 }
 
 bool hal_bt_is_bonded(uint8_t id, bt_t bt)
@@ -529,11 +536,16 @@ bool hal_bt_enable(uint8_t id, bt_t bt,bool en)
             if(!bt_connect_phone_back_start()){     //先回连
                 bt_wait_phone_connect_control(1);
             }
-            sys_auto_sniff_controle(1, NULL);
+            if(!edr_sniff_by_remote){
+                sys_auto_sniff_controle(1, NULL);
+            }
+
         } else {
             user_hid_enable(0);
             bt_wait_phone_connect_control(0);
-            sys_auto_sniff_controle(0, NULL);
+            if(!edr_sniff_by_remote){
+                sys_auto_sniff_controle(0, NULL);
+            }
             btctrler_task_close_bredr();
         }    
         break;
@@ -680,6 +692,9 @@ static void user_hid_set_reportmap (bt_t bt)
 bool hal_bt_init(uint8_t id)
 {
     bool ret = false;
+    char device_name[BT_NAME_LEN_MAX];
+    u8 device_name_len = 0;
+    u8 tmp_addr[6];
 
     if(BT_ID0 != id) return false;
 
@@ -687,6 +702,9 @@ bool hal_bt_init(uint8_t id)
     bt_pll_para(TCFG_CLOCK_OSC_HZ, sys_clk, 0, 0);
 
     
+    memcpy(bas_mac,bt_get_mac_addr(),6); 
+    logd("bas_mac:");dumpd(bas_mac,6);
+
     #if TCFG_USER_EDR_ENABLE
     btstack_edr_start_before_init(&edr_default_config, 0);
     //change init
@@ -696,12 +714,29 @@ bool hal_bt_init(uint8_t id)
     #if TCFG_USER_BLE_ENABLE
     btstack_ble_start_before_init(&ble_default_config, 0);
     #endif
+    
+    //设置EDR基础蓝牙地址和蓝牙名称,BLE地址和名称是基于EDR地址和名称上修改
+	#if TCFG_USER_EDR_ENABLE
+    api_bt_get_mac(BT_ID0,BT_EDR, tmp_addr);
+    bt_set_mac_addr(tmp_addr);
 
+    device_name_len = api_bt_get_name(BT_ID0,BT_EDR,device_name,sizeof(device_name) );      //设置EDR蓝牙名称
+    bt_set_local_name(device_name,device_name_len);
+    logi("edr name(%d): %s \n", device_name_len, device_name);dumpd(tmp_addr,6);
+    #if EDR_HID_SUPPORT && TCFG_USER_EDR_ENABLE
+    user_hid_set_reportmap (BT_EDR);
+    #endif
+	#endif
+
+    #if TCFG_USER_BLE_ENABLE
+    api_bt_get_mac(BT_ID0,BT_BLE, tmp_addr);
+    le_controller_set_mac((void *)tmp_addr);
+    device_name_len = api_bt_get_name(BT_ID0,BT_BLE,device_name,sizeof(device_name) );       //设置BLE蓝牙名称
+    ble_comm_set_config_name(device_name, 0);
+    logi("ble name(%d): %s \n", device_name_len, device_name);dumpd(tmp_addr,6);
     #if BLE_HID_SUPPORT && TCFG_USER_BLE_ENABLE
     user_hid_set_reportmap (BT_BLE);
     #endif
-    #if EDR_HID_SUPPORT && TCFG_USER_EDR_ENABLE
-    user_hid_set_reportmap (BT_EDR);
     #endif
 
     btstack_init();

@@ -40,10 +40,10 @@ clean_ac632n_LiteEMF:
 	$(MAKE) -C apps/hid/board/bd19 -f Makefile_LiteEMF clean
 
 ac635n_LiteEMF:
-	$(MAKE) -C apps/hid/board/bd19 -f Makefile_LiteEMF
+	$(MAKE) -C apps/hid/board/br23 -f Makefile_LiteEMF
 
 clean_ac635n_LiteEMF:
-	$(MAKE) -C apps/hid/board/bd19 -f Makefile_LiteEMF clean
+	$(MAKE) -C apps/hid/board/br23 -f Makefile_LiteEMF clean
 
 ac632n_hid:
 	$(MAKE) -C apps/hid/board/bd19 -f Makefile

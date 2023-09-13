@@ -284,12 +284,23 @@ void btstack_edr_start_after_init(int param)
 	#endif
 
 #else
+    #ifdef LITEEMF_ENABLED
+    if(edr_sniff_by_remote){
+        lmp_set_sniff_establish_by_remote(1);
+    }
+    #endif
+
     bt_wait_phone_connect_control(1);
 #endif
 
 #if SNIFF_ENABLE
     /* bt_wait_phone_connect_control_ext(1, 1); */
-    sys_auto_sniff_controle(1, NULL);
+    #ifdef LITEEMF_ENABLED
+    if(!edr_sniff_by_remote)
+    #endif
+    {
+        sys_auto_sniff_controle(1, NULL);
+    }
 #else
     /* lmp_set_sniff_disable();[>set disable<] */
 #endif
@@ -407,12 +418,17 @@ static int bt_comm_edr_status_event_handler(struct bt_event *bt)
 
     case BT_STATUS_SNIFF_STATE_UPDATE:
         log_info(" BT_STATUS_SNIFF_STATE_UPDATE %d\n", bt->value);    //0退出SNIFF
-        if (bt->value == 0) {
-            sys_auto_sniff_controle(1, bt->args);
-        } else {
-            sys_auto_sniff_controle(0, bt->args);
-            if (edr_hid_timer_handle) {
-                sys_s_hi_timer_modify(edr_hid_timer_handle, (u32)(get_app_sniff_interval()));
+        #ifdef LITEEMF_ENABLED
+        if(!edr_sniff_by_remote)
+        #endif
+        {
+            if (bt->value == 0) {           //sniff退出状态下需要从机重新进入sniff
+                sys_auto_sniff_controle(1, bt->args);
+            } else {
+                sys_auto_sniff_controle(0, bt->args);
+                if (edr_hid_timer_handle) {
+                    sys_s_hi_timer_modify(edr_hid_timer_handle, (u32)(get_app_sniff_interval()));
+                }
             }
         }
         break;
@@ -857,7 +873,13 @@ void bt_comm_edr_mode_enable(u8 enable)
 #if (USER_SUPPORT_PROFILE_HID==1)
         user_hid_enable(1);
 #endif
-        sys_auto_sniff_controle(1, NULL);
+        #ifdef LITEEMF_ENABLED
+        if(!edr_sniff_by_remote)
+        #endif
+        {
+            sys_auto_sniff_controle(1, NULL);
+        }
+
     } else {
 
 #if USER_SUPPORT_PROFILE_HFP
@@ -870,7 +892,12 @@ void bt_comm_edr_mode_enable(u8 enable)
         user_hid_enable(0);
 #endif
         bt_wait_phone_connect_control(0);
-        sys_auto_sniff_controle(0, NULL);
+        #ifdef LITEEMF_ENABLED
+        if(!edr_sniff_by_remote)
+        #endif
+        {
+            sys_auto_sniff_controle(0, NULL);
+        }
 #if 0
         log_info("radio_set_eninv");
 #ifndef CONFIG_NEW_BREDR_ENABLE

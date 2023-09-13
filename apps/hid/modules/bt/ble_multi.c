@@ -132,10 +132,12 @@ void bt_ble_init(void)
     log_info("%s\n", __FUNCTION__);
     log_info("ble_file: %s", __FILE__);
 
+    #ifndef LITEEMF_ENABLED
     #if DOUBLE_BT_SAME_NAME
     ble_comm_set_config_name(bt_get_local_name(), 0);
     #else
     ble_comm_set_config_name(bt_get_local_name(), 1);    //在sdk_bt_xx中初始化
+    #endif
     #endif
 
 #if CONFIG_BT_GATT_SERVER_NUM
