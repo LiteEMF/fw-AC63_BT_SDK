@@ -58,6 +58,7 @@ cscope.out
 *.ufw
 
 #add for build
+*.used
 cpu/**/tools/**/*.bin
 cpu/**/tools/**/*.txt
 cpu/**/tools/**/*.fw

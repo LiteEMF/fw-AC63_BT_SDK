@@ -28,8 +28,12 @@
 #include "ui/ui_api.h"
 #endif
 
+#ifdef LITEEMF_ENABLED
+#include "api/usb/device/usbd.h"
+#endif
 
-#if TCFG_APP_PC_EN
+
+#if TCFG_APP_PC_EN || TCFG_USB_SLAVE_AUDIO_ENABLE
 
 //////////////////////////////////////////////////////////////////////////////
 #if ((AUDIO_OUTPUT_WAY == AUDIO_OUTPUT_WAY_DAC) &&  !TCFG_USER_TWS_ENABLE)
@@ -583,7 +587,11 @@ static int uac_audio_start(void)
     audio_output_set_start_volume(APP_AUDIO_STATE_MUSIC);
     u16 l_volume, r_volume;
     #if TCFG_AUDIO_ENABLE
-    uac_get_cur_vol(0, &l_volume, &r_volume);
+        #ifdef LITEEMF_ENABLED
+        api_audio_spk_get_vol_percent(USBD_AUDIO_ID,&usbd_audio_info, &l_volume, &r_volume);
+        #else
+        uac_get_cur_vol(0, &l_volume, &r_volume);
+        #endif
     #endif
     u8 vol = uac_vol_switch(l_volume);
     app_audio_set_volume(APP_AUDIO_STATE_MUSIC, vol, 0);

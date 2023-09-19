@@ -474,9 +474,7 @@ error_t hal_usbd_out(uint8_t id, uint8_t ep, uint8_t* buf, uint16_t* plen)
 error_t hal_usbd_reset(uint8_t id)
 {
 	hal_usbd_deinit(id);
-
-	os_time_dly(1);
-
+    delay_ms(1);		//usd while(1) delay
 	hal_usbd_init(id);
 
 	return ERROR_SUCCESS;

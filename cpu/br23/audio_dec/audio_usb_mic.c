@@ -17,7 +17,7 @@
 #include "aec_user.h"
 #endif/*USB_MIC_AEC_EN*/
 
-#if TCFG_APP_PC_EN
+#if TCFG_APP_PC_EN || TCFG_USB_SLAVE_AUDIO_ENABLE
 #include "device/uac_stream.h"
 
 #if USB_MIC_SRC_ENABLE
@@ -27,7 +27,9 @@
 #include "Resample_api.h"
 #endif/*USB_MIC_SRC_ENABLE*/
 
-
+#ifdef LITEEMF_ENABLED
+#include "api/usb/device/usbd.h"
+#endif
 
 #define PCM_ENC2USB_OUTBUF_LEN		(4 * 1024)
 
@@ -575,7 +577,11 @@ int usb_audio_mic_open(void *_info)
     app_var.usb_mic_gain = mic_effect_get_micgain();
 #else
     #if TCFG_AUDIO_ENABLE
-    app_var.usb_mic_gain = uac_mic_vol_switch(uac_get_mic_vol(0));
+        #ifdef LITEEMF_ENABLED
+        app_var.usb_mic_gain = uac_mic_vol_switch(api_audio_mic_get_vol_percent(USBD_AUDIO_ID,&usbd_audio_info));
+        #else
+        app_var.usb_mic_gain = uac_mic_vol_switch(uac_get_mic_vol(0));
+        #endif
     #endif
 #endif//TCFG_MIC_EFFECT_ENABLE
 

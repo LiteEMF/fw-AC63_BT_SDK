@@ -3,7 +3,7 @@
 #include "printf.h"
 #include "usb/usb_config.h"
 #include "usb/device/usb_stack.h"
-
+#include "usb_std_class_def.h"
 #if TCFG_USB_SLAVE_AUDIO_ENABLE
 #include "usb/device/uac_audio.h"
 #include "uac_stream.h"
@@ -24,6 +24,9 @@
 #include "debug.h"
 
 #define     UAC_DEBUG_ECHO_MODE 0
+
+
+u32 uac_spk_stream_rate = SPK_AUDIO_RATE;      //emf add 用于支持喇叭采样率切换
 
 static volatile u8 speaker_stream_is_open = 0;
 struct uac_speaker_handle {
@@ -53,6 +56,13 @@ static struct uac_speaker_handle *uac_speaker = NULL;
 static struct uac_speaker_handle uac_speaker_handle SEC(.uac_var);
 static u8 uac_rx_buffer[UAC_BUFFER_SIZE] ALIGNED(4) SEC(.uac_rx);
 #endif
+
+
+u8 uac_speaker_stream_status(void)
+{
+    return speaker_stream_is_open;
+}
+
 u32 uac_speaker_stream_length()
 {
     return UAC_BUFFER_SIZE;
@@ -106,17 +116,17 @@ int uac_speaker_stream_sample_rate(void)
     /* #ifdef CONFIG_MEDIA_DEVELOP_ENABLE */
     if (uac_speaker && uac_speaker->audio_track) {
         int sr = audio_local_sample_track_rate(uac_speaker->audio_track);
-        if ((sr < (SPK_AUDIO_RATE + 500)) && (sr > (SPK_AUDIO_RATE - 500))) {
+        if ((sr < (uac_spk_stream_rate + 500)) && (sr > (uac_spk_stream_rate - 500))) {
             return sr;
         }
         /* printf("uac audio_track reset \n"); */
         local_irq_disable();
         audio_local_sample_track_close(uac_speaker->audio_track);
-        uac_speaker->audio_track = audio_local_sample_track_open(SPK_CHANNEL, SPK_AUDIO_RATE, 1000);
+        uac_speaker->audio_track = audio_local_sample_track_open(SPK_CHANNEL, uac_spk_stream_rate, 1000);
         local_irq_enable();
     }
     /* #endif */
-    return SPK_AUDIO_RATE;
+    return uac_spk_stream_rate;
 }
 
 void uac_speaker_stream_write(const u8 *obuf, u32 len)
@@ -181,6 +191,7 @@ void uac_speaker_stream_open(u32 samplerate, u32 ch)
         return;
     }
     log_info("%s", __func__);
+    uac_spk_stream_rate = samplerate;       //emf add 
 
     if (!uac_speaker) {
 #if USB_MALLOC_ENABLE

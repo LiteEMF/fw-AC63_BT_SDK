@@ -17,6 +17,7 @@ enum uac_event {
     USB_AUDIO_SET_MIC_VOL,
 };
 
+extern u32 uac_spk_stream_rate;      //emf add 
 
 void uac_speaker_stream_buf_clear(void);
 u32 uac_speaker_stream_length();

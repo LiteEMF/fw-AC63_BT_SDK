@@ -76,8 +76,16 @@ void hal_audio_close_mic(uint8_t id)
 }
 bool hal_audio_init(uint8_t id,api_audio_t *paudio)
 {
+	usb_audio_demo_init();
 	return true;
 }
+
+bool hal_audio_deinit(uint8_t id,api_audio_t *paudio)
+{
+	usb_audio_demo_exit();
+	return true;
+}
+
 
 #endif
 

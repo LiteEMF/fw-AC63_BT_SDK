@@ -207,7 +207,11 @@ void hw_user_vender_init(void)
 	
 	#if API_USBD_BIT_ENABLE
 	for(id=0; id<USBD_NUM; id++){
+		#if USBD_TYPE_SUPPORT & BIT_ENUM(DEV_TYPE_AUTO)
+		m_usbd_types[id] = BIT_ENUM(DEV_TYPE_AUTO);
+		#else
 		m_usbd_types[id] = USBD_TYPE_SUPPORT;
+		#endif
         m_usbd_hid_types[id] = USBD_HID_SUPPORT;
 	}
 	#endif
@@ -276,85 +280,101 @@ void user_vender_handler(void)
 		trp_handle_t bt_handle = {TR_BLE, BT_ID0, 0};;
 		trp_handle_t usb_handle = {TR_USBD, TEST_USB_ID, 0}; 
 		hid_type_t hid_type;
-		#if (API_USBD_BIT_ENABLE && (USBD_HID_SUPPORT & (BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_MOUSE) | BIT_ENUM(HID_TYPE_CONSUMER)))) \ 
-			|| (BT_ENABLE && (BT_HID_SUPPORT & (BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_MOUSE) | BIT_ENUM(HID_TYPE_CONSUMER))))
-		if(1){
-			bool ready = false;
 
-			#if USBD_HID_SUPPORT
+		timer = m_systick;
+		
+		//kb
+		#if HIDD_SUPPORT & BIT_ENUM(HID_TYPE_KB)
+		if(1){
+			static kb_t kb={KB_REPORT_ID,0};
+
+			if(kb.key[0]){
+				kb.key[0] = 0;
+				kb.key[1] = 0;
+			}else{
+				kb.key[0] = KB_A;
+			}
+
+			#if USBD_HID_SUPPORT & BIT_ENUM(HID_TYPE_KB)
 			pdev = usbd_get_dev(TEST_USB_ID);
 			usb_handle.index = U16(DEF_DEV_TYPE_HID,DEF_HID_TYPE_KB);
-			ready |= pdev->ready; 
+			if(pdev->ready){
+				api_transport_tx(&usb_handle,&kb,sizeof(kb));
+			}
 			#endif
 
-			#if BLE_HID_SUPPORT
+			#if BLE_HID_SUPPORT & BIT_ENUM(HID_TYPE_KB)
 			bt_ctbp = api_bt_get_ctb(BT_BLE);
 			bt_handle.trp = TR_BLE;
 			bt_handle.index = U16(DEF_DEV_TYPE_HID,DEF_HID_TYPE_KB);
-			ready |= BOOL_SET(bt_ctbp->sta == BT_STA_READY); 
+			if(bt_ctbp->sta == BT_STA_READY){
+				api_transport_tx(&bt_handle,&kb,sizeof(kb));
+			}
 			#endif
 
-			#if EDR_HID_SUPPORT
+			#if EDR_HID_SUPPORT & BIT_ENUM(HID_TYPE_KB)
 			bt_ctbp = api_bt_get_ctb(BT_EDR);
 			bt_handle.trp = TR_EDR;
 			bt_handle.index = U16(DEF_DEV_TYPE_HID,DEF_HID_TYPE_KB);
-			ready |= BOOL_SET(bt_ctbp->sta == BT_STA_READY); 
-			#endif
-
-			timer = m_systick;
-			if(ready){
-				static kb_t kb={KB_REPORT_ID,0};
-				static mouse_t mouse={MOUSE_REPORT_ID,0};
-
-				if(kb.key[0]){
-					kb.key[0] = 0;
-					kb.key[1] = 0;
-				}else{
-					kb.key[0] = KB_CAP_LOCK;
-					kb.key[1] = KB_A;
-				}
-
-				#if USBD_HID_SUPPORT
-				api_transport_tx(&usb_handle,&kb,sizeof(kb));
-				#endif
-				#if BT_HID_SUPPORT
+			if(bt_ctbp->sta == BT_STA_READY){
 				api_transport_tx(&bt_handle,&kb,sizeof(kb));
-				#endif
-
-
-				if(mouse.x >= 0){
-					mouse.x = -10;
-				}else{
-					mouse.x = 10;
-				}
-
-				#if USBD_HID_SUPPORT
-				usb_handle.index = U16(DEF_DEV_TYPE_HID,DEF_HID_TYPE_MOUSE);
-				api_transport_tx(&usb_handle,&mouse,sizeof(mouse));
-				#endif
-				#if BT_HID_SUPPORT
-				bt_handle.index = U16(DEF_DEV_TYPE_HID,DEF_HID_TYPE_MOUSE);
-				api_transport_tx(&bt_handle,&mouse,sizeof(mouse));
-
-				#if BLE_HID_SUPPORT
-				bt_handle.index = U16(DEV_TYPE_VENDOR,DEF_HID_TYPE_MOUSE);
-				api_transport_tx(&bt_handle,&mouse,sizeof(mouse));
-				#endif
-				
-				#endif
 			}
+			#endif
 		}
 		#endif
-
-		#if (API_USBD_BIT_ENABLE && (USBD_HID_SUPPORT & HID_GAMEPAD_MASK)) \ 
-			|| (BT_ENABLE && (BT_HID_SUPPORT & HID_GAMEPAD_MASK))
+	
+		//mouse
+		#if HIDD_SUPPORT & BIT_ENUM(HID_TYPE_MOUSE)
 		if(1){
-			bool ready = false;
+			static mouse_t mouse={MOUSE_REPORT_ID,0};
+			if(mouse.x >= 0){
+				mouse.x = -10;
+			}else{
+				mouse.x = 10;
+			}
+
+			#if USBD_HID_SUPPORT & BIT_ENUM(HID_TYPE_MOUSE)
+			pdev = usbd_get_dev(TEST_USB_ID);
+			usb_handle.index = U16(DEF_DEV_TYPE_HID,HID_TYPE_MOUSE);
+			if(pdev->ready){
+				api_transport_tx(&usb_handle,&mouse,sizeof(mouse));
+			}
+			#endif
+
+			#if BLE_HID_SUPPORT & BIT_ENUM(HID_TYPE_MOUSE)
+			bt_ctbp = api_bt_get_ctb(BT_BLE);
+			bt_handle.trp = TR_BLE;
+			bt_handle.index = U16(DEF_DEV_TYPE_HID,HID_TYPE_MOUSE);
+			if(bt_ctbp->sta == BT_STA_READY){
+				api_transport_tx(&bt_handle,&mouse,sizeof(mouse));
+			}
+			#endif
+
+			#if EDR_HID_SUPPORT & BIT_ENUM(HID_TYPE_MOUSE)
+			bt_ctbp = api_bt_get_ctb(BT_EDR);
+			bt_handle.trp = TR_EDR;
+			bt_handle.index = U16(DEF_DEV_TYPE_HID,HID_TYPE_MOUSE);
+			if(bt_ctbp->sta == BT_STA_READY){
+				api_transport_tx(&bt_handle,&mouse,sizeof(mouse));
+			}
+			#endif
+		}
+		#endif
+		
+		//gamepad
+		#if HIDD_SUPPORT & HID_GAMEPAD_MASK
+		if(1){
+			static app_gamepad_key_t key={0};
+			key.key ^= HW_KEY_Y;
+			key.stick_l.x += 10000;
+			
 			#if USBD_HID_SUPPORT
 			pdev = usbd_get_dev(TEST_USB_ID);
 			hid_type = app_gamepad_get_hidtype(m_usbd_hid_types[TEST_USB_ID]);
 			usb_handle.index = U16(DEF_DEV_TYPE_HID,hid_type);
-			ready |= pdev->ready; 
+			if(pdev->ready){
+				app_gamepad_key_send(&usb_handle,&key);
+			}
 			#endif
 
 			#if BLE_HID_SUPPORT
@@ -362,8 +382,9 @@ void user_vender_handler(void)
 			hid_type = app_gamepad_get_hidtype(bt_ctbp->hid_types);
 			bt_handle.trp = TR_BLE;
 			bt_handle.index = U16(DEF_DEV_TYPE_HID,hid_type);
-
-			ready |= BOOL_SET(bt_ctbp->sta == BT_STA_READY); 
+			if(bt_ctbp->sta == BT_STA_READY){
+				app_gamepad_key_send(&bt_handle,&key);
+			}
 			#endif
 
 			#if EDR_HID_SUPPORT
@@ -371,22 +392,11 @@ void user_vender_handler(void)
 			hid_type = app_gamepad_get_hidtype(bt_ctbp->hid_types);
 			bt_handle.trp = TR_EDR;
 			bt_handle.index = U16(DEF_DEV_TYPE_HID,hid_type);
-			ready |= BOOL_SET(bt_ctbp->sta == BT_STA_READY); 
-			#endif
-
-			timer = m_systick;
-			if(ready){
-				static app_gamepad_key_t key={0};
-
-				#if USBD_HID_SUPPORT
-				app_gamepad_key_send(&usb_handle,&key);
-				#endif
-				#if BT_HID_SUPPORT
+			if(bt_ctbp->sta == BT_STA_READY){
 				app_gamepad_key_send(&bt_handle,&key);
-				#endif
-
-				key.key ^= HW_KEY_Y;
 			}
+			#endif
+			
 		}
 		#endif
     }
