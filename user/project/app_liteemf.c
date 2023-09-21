@@ -22,6 +22,13 @@
 #include "rcsp_bluetooth.h"
 #include "update_loader_download.h"
 #include "app/emf.h"
+#if APP_GAMEAPD_ENABLE
+#include "app/gamepad/app_gamepad.h"
+#endif
+
+#if defined PS_P2_ENCRYPT_ENABLED || defined PS_7105_ENCRYPT_ENABLED
+#include  "app/gamepad/ps_crypt.h"
+#endif
 #include "api/api_log.h"
 
 
@@ -123,6 +130,42 @@ static void emf_task_handle(void *arg)
 }
 
 
+#if defined PS_P2_ENCRYPT_ENABLED || defined PS_7105_ENCRYPT_ENABLED
+static void ps_task_handle(void *arg)
+{
+    uint8_t *p;
+    int ret = 0;
+    int msg[16];
+
+    while (1) {
+        ret = os_taskq_pend("taskq", msg, ARRAY_SIZE(msg));
+        if (ret != OS_TASKQ) {
+            continue;
+        }
+        if (msg[0] != Q_MSG) {
+            continue;
+        }
+
+        ps_encrypt_task(NULL);
+		if((PS_ANSWER != ps_encrypt.step) && (PS_IDLE != ps_encrypt.step)){
+			os_time_dly(1);
+			if(os_taskq_post_msg("ps_task", 1, 0)){
+				logd("p2 post err!\n");
+			}
+		}
+     
+    }
+}
+bool os_ps_task_en(bool en)		//如果使用os,用于开始和停止任务
+{
+    if(en){
+        if(os_taskq_post_msg("ps_task", 1, 0)){
+            logd("p2 post err!\n");
+        }
+    }
+	return true;
+}
+#endif
 
 
 /*******************************************************************
@@ -147,6 +190,10 @@ static void liteemf_app_start()
     logd("start end\n");
     os_task_create(emf_task_handle,NULL,2,2048,512,"emf_task");
     heartbeat_msg_cnt = 0;
+
+    #if defined PS_P2_ENCRYPT_ENABLED || defined PS_7105_ENCRYPT_ENABLED
+	os_task_create(ps_task_handle,NULL,1,PS_READ_SECURITY_LEN,64,"ps_task");
+	#endif
 
     #if BT_ENABLE
     api_bt_init();

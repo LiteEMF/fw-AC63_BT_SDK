@@ -101,7 +101,13 @@
 		"audio_track.h": "c",
 		"audio_stream.h": "c",
 		"usbd_class.h": "c",
-		"hid_desc_gamepad.h": "c"
+		"hid_desc_gamepad.h": "c",
+		"hid_desc_ps4_usb.h": "c",
+		"app_rumble.h": "c",
+		"ps_typedef.h": "c",
+		"ps_crypt.h": "c",
+		"p2.h": "c",
+		"nxp7105.h": "c"
 	},
 	"cmake.sourceDirectory": "D:/work/git/github/fw-AC63_BT_SDK/user/LiteEMF/api/gps"
 }

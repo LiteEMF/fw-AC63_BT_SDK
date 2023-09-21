@@ -131,42 +131,6 @@ char* usbd_user_get_string(uint8_t id, uint8_t index)
 		
 	return pstr;
 }
-void usbd_user_set_device_desc(uint8_t id, usb_desc_device_t *pdesc)
-{
-	if(m_usbd_types[id] & BIT(DEV_TYPE_HID)){
-		if(m_usbd_hid_types[id] & HID_SWITCH_MASK){
-			#if USBD_HID_SUPPORT & HID_SWITCH_MASK
-			pdesc->idVendor = SWITCH_VID;
-			pdesc->idProduct = SWITCH_PID;
-			#endif
-		}else if(m_usbd_hid_types[id] & HID_PS_MASK){
-			#if USBD_HID_SUPPORT & HID_PS_MASK
-			pdesc->idVendor = PS_VID;
-			if(m_usbd_hid_types[id] & BIT(HID_TYPE_PS3)){
-				pdesc->idProduct = PS3_PID;
-			}else{
-				pdesc->idProduct = PS4_PID;
-			}
-			#endif
-		}else if(m_usbd_hid_types[id] & BIT_ENUM(HID_TYPE_XBOX)){
-			#if USBD_HID_SUPPORT & BIT_ENUM(HID_TYPE_XBOX)
-			pdesc->idVendor = XBOX_VID;	//0xFF,0x47,0xD0
-			pdesc->idProduct = XBOX_PID;
-			pdesc->bDeviceClass       = 0xFF;
-			pdesc->bDeviceSubClass    = 0x47;
-			pdesc->bDeviceProtocol    = 0xD0;
-			#endif
-		}else if(m_usbd_hid_types[id] == BIT_ENUM(HID_TYPE_X360)){		//xinput 复合设备使用自定义vid
-			#if USBD_HID_SUPPORT & BIT_ENUM(HID_TYPE_X360)
-			pdesc->idVendor = XBOX_VID;	//0xFF,0x47,0xD0
-			pdesc->idProduct = X360_PID;	//0xff, 0xff, 0xff
-			pdesc->bDeviceClass       = 0xFF;
-			pdesc->bDeviceSubClass    = 0xff;
-			pdesc->bDeviceProtocol    = 0xff;
-			#endif
-		}
-	}
-}
 #endif
 
 
@@ -274,7 +238,7 @@ void user_vender_handler(void)
 
     //use test
 	#define  TEST_USB_ID	0
-	if(m_systick - timer >= 3000){
+	if(m_systick - timer >= 800){
 		usbd_dev_t *pdev;
 		api_bt_ctb_t* bt_ctbp;
 		trp_handle_t bt_handle = {TR_BLE, BT_ID0, 0};;
@@ -293,6 +257,7 @@ void user_vender_handler(void)
 				kb.key[1] = 0;
 			}else{
 				kb.key[0] = KB_A;
+				kb.key[1] = KB_CAP_LOCK;
 			}
 
 			#if USBD_HID_SUPPORT & BIT_ENUM(HID_TYPE_KB)
@@ -365,7 +330,7 @@ void user_vender_handler(void)
 		#if HIDD_SUPPORT & HID_GAMEPAD_MASK
 		if(1){
 			static app_gamepad_key_t key={0};
-			key.key ^= HW_KEY_Y;
+			key.key ^= HW_KEY_A;
 			key.stick_l.x += 10000;
 			
 			#if USBD_HID_SUPPORT
