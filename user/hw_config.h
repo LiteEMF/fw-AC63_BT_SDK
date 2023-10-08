@@ -24,8 +24,8 @@ extern "C" {
 *******************************************************************************************************/
 #define HEAP_ID						0					/* used heap_n file*/
 #define LOG_ENABLE                  1
-#define  CRC8_TABLE_EANBLE 			0					/*杰里默认有crc8校验*/
-
+#define CRC8_TABLE_EANBLE 			0					/*杰里默认有crc8校验*/
+#define API_WDT_ENABLE				1
 
 #define TCFG_ADKEY_ENABLE					0
 #define TCFG_MATRIX_KEY_ENABLE              0
@@ -54,10 +54,10 @@ extern "C" {
 
 	#if GAMEPAD1	
 		#define APP_KEY_ENABLE			1
-		#define API_WDT_ENABLE			0
 		#define TCFG_LOWPOWER_LOWPOWER_SEL			0		/*关闭修改防止定时器不准确*/
-
-		#define API_OTG_BIT_ENABLE			(BIT(0) | BIT(1))
+		#define API_WDT_TIME	8000	
+		
+		// #define API_OTG_BIT_ENABLE			(BIT(0) | BIT(1))
 		#define API_USBD_BIT_ENABLE			(BIT(0) | BIT(1))
 		// #define USBD_TYPE_SUPPORT 			(BIT_ENUM(DEV_TYPE_MSD))
 		// #define USBD_RAM_DISK_ENABLE		1
@@ -75,11 +75,11 @@ extern "C" {
 		#define PS_P2_ENCRYPT_ENABLED
 
 		//bt 
-		#define BT0_SUPPORT					(BIT_ENUM(TR_BLE))
+		// #define BT0_SUPPORT					(BIT_ENUM(TR_BLE))
 		// #define BT0_SUPPORT					(BIT_ENUM(TR_BLE) | BIT_ENUM(TR_BLEC))
 		#define EDR_TYPE_SUPPORT			BIT_ENUM(DEV_TYPE_HID)
 		#define BLE_TYPE_SUPPORT			(BIT_ENUM(DEV_TYPE_HID) | BIT_ENUM(DEV_TYPE_VENDOR))
-		#define BLE_HID_SUPPORT				(BIT_ENUM(HID_TYPE_XBOX))
+		// #define BLE_HID_SUPPORT				(BIT_ENUM(HID_TYPE_XBOX))
 		// #define EDR_HID_SUPPORT				BIT_ENUM(HID_TYPE_XBOX)
 		// #define BLE_HID_SUPPORT				(BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_MOUSE))
 		// #define EDR_HID_SUPPORT				(BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_MOUSE))

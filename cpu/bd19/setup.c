@@ -13,6 +13,12 @@
 #include "gpio.h"
 //#include "power_manage.h"
 //
+
+#ifdef LITEEMF_ENABLED
+#include "hw_config.h"
+#include "api/api_wdt.h"
+#endif
+
 #define LOG_TAG_CONST       SETUP
 #define LOG_TAG             "[SETUP]"
 #define LOG_ERROR_ENABLE
@@ -159,7 +165,12 @@ void setup_arch()
     //P11 系统必须提前打开
     p11_init();
 
+    #if defined API_WDT_ENABLE && API_WDT_ENABLE
+    api_wdt_init(API_WDT_TIME);
+    #else
     wdt_init(WDT_4S);
+    #endif
+
     /* wdt_close(); */
 
     clk_voltage_init(TCFG_CLOCK_MODE, SYSVDD_VOL_SEL_126V);

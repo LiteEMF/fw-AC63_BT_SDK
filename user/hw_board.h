@@ -44,9 +44,11 @@ extern "C" {
 			}
 
 		// iic
-		//#define HW_IIC_MAP {	\
-			{PA_08,PA_09,PB_02,0,VAL2FLD(IIC_BADU,400000)},	\
+		#define  IIC_SOFT_ENABLE  		1
+		#define HW_IIC_MAP {	\
+			{PC_04,PC_05,PIN_NULL,0,VAL2FLD(IIC_BADU,400000)},	\
 			}
+
 		// spi
 		// #define HW_SPI_HOST_MAP {\
 			{PB_07,PB_05,PB_06,PB_04,SPI1,VAL2FLD(SPI_BADU,1000)},	\

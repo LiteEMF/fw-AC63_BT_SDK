@@ -238,7 +238,7 @@ void user_vender_handler(void)
 
     //use test
 	#define  TEST_USB_ID	0
-	if(m_systick - timer >= 800){
+	if(m_systick - timer >= 8){
 		usbd_dev_t *pdev;
 		api_bt_ctb_t* bt_ctbp;
 		trp_handle_t bt_handle = {TR_BLE, BT_ID0, 0};;

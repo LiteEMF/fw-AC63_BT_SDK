@@ -14,6 +14,12 @@
 #include "gpio.h"
 //#include "power_manage.h"
 //
+
+#ifdef LITEEMF_ENABLED
+#include "hw_config.h"
+#include "api/api_wdt.h"
+#endif
+
 #define LOG_TAG_CONST       SETUP
 #define LOG_TAG             "[SETUP]"
 #define LOG_ERROR_ENABLE
@@ -206,7 +212,11 @@ void setup_arch()
     memset(stack_magic0, 0x5a, sizeof(stack_magic0));
 
 
+    #if defined API_WDT_ENABLE && API_WDT_ENABLE
+    api_wdt_init(API_WDT_TIME);
+    #else
     wdt_init(WDT_4S);
+    #endif
     /* wdt_close(); */
     //上电初始所有io
     port_init();
@@ -284,6 +294,10 @@ void setup_arch()
 
     /* sys_timer_add(NULL, timer, 10 * 1000); */
 
+    extern void pmm_dump(void);
+    extern void vmm_dump(void);
+    pmm_dump();
+    vmm_dump();
 
     __crc16_mutex_init();
 }

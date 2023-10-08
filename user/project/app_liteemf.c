@@ -191,8 +191,10 @@ static void liteemf_app_start()
     os_task_create(emf_task_handle,NULL,2,2048,512,"emf_task");
     heartbeat_msg_cnt = 0;
 
-    #if defined PS_P2_ENCRYPT_ENABLED || defined PS_7105_ENCRYPT_ENABLED
-	os_task_create(ps_task_handle,NULL,1,PS_READ_SECURITY_LEN,64,"ps_task");
+    #if defined PS_P2_ENCRYPT_ENABLED
+	os_task_create(ps_task_handle,NULL,1,1024,64,"ps_task");
+	#elif defined PS_7105_ENCRYPT_ENABLED
+	os_task_create(ps_task_handle,NULL,1,256,64,"ps_task");
 	#endif
 
     #if BT_ENABLE
