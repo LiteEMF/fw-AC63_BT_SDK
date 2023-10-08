@@ -162,7 +162,6 @@
 #define USB_EP0_STAGE_OUT         2
 #define USB_EP0_SET_STALL         3
 #define USB_EP0_IGNORE            4
-#define USB_EP0_STAGE_NAK         5
 
 ///USB suspend_resume各阶段状态
 #define USB_READY               0
