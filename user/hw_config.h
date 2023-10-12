@@ -49,7 +49,11 @@ extern "C" {
 	#endif
 
 #elif PROJECT_GAMEPAD
-	#define GAMEPAD1					1
+	#define GAMEPAD1					0
+	#define KMFC						1
+	#define KMFCS						0
+
+	
 	
 
 	#if GAMEPAD1	
@@ -75,28 +79,77 @@ extern "C" {
 		#define PS_P2_ENCRYPT_ENABLED
 
 		//bt 
-		// #define BT0_SUPPORT					(BIT_ENUM(TR_BLE))
-		// #define BT0_SUPPORT					(BIT_ENUM(TR_BLE) | BIT_ENUM(TR_BLEC))
-		#define EDR_TYPE_SUPPORT			BIT_ENUM(DEV_TYPE_HID)
-		#define BLE_TYPE_SUPPORT			(BIT_ENUM(DEV_TYPE_HID) | BIT_ENUM(DEV_TYPE_VENDOR))
-		// #define BLE_HID_SUPPORT				(BIT_ENUM(HID_TYPE_XBOX))
-		// #define EDR_HID_SUPPORT				BIT_ENUM(HID_TYPE_XBOX)
-		// #define BLE_HID_SUPPORT				(BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_MOUSE))
-		// #define EDR_HID_SUPPORT				(BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_MOUSE))
+		#define BT0_SUPPORT							(BIT_ENUM(TR_BLE))
+		// #define BT0_SUPPORT						(BIT_ENUM(TR_BLE) | BIT_ENUM(TR_BLEC))
+		#define EDR_TYPE_SUPPORT					BIT_ENUM(DEV_TYPE_HID)
+		#define BLE_TYPE_SUPPORT					(BIT_ENUM(DEV_TYPE_HID) | BIT_ENUM(DEV_TYPE_VENDOR))
+		#define BLE_HID_SUPPORT						(BIT_ENUM(HID_TYPE_XBOX))
+		// #define EDR_HID_SUPPORT					BIT_ENUM(HID_TYPE_XBOX)
+		// #define BLE_HID_SUPPORT					(BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_MOUSE))
+		// #define EDR_HID_SUPPORT					(BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_MOUSE))
 		#define BTC_SEARCH_NAME						DEFAULT_NAME
-		// #define BTC_SEARCH_RSSI						-50
-		// #define BTC_SEARCH_MAC						"JL6321"
+		// #define BTC_SEARCH_RSSI					-50
+		// #define BTC_SEARCH_MAC					"JL6321"
 
-		#define EDR_ICON					BD_CLASS_GAMEPAD
+		#define EDR_ICON							BD_CLASS_GAMEPAD
 
 		#define BTC_SEARCH_UUID16			    	0xae30
 		#define BTC_SEARCH_WRITE_CHARA_UUID16		0xae01
 		#define BTC_SEARCH_NOTIFY_CHARA_UUID16		0xae01
 
-		#define DEV_TRPS_DEFAULT				BT0_SUPPORT
-		#define SW_VERSION                     	0x01
-        #define DEFAULT_NAME			       	"gamepad"
-        #define DEFAULT_MODEL					"GP_dev"
+		#define DEV_TRPS_DEFAULT					BT0_SUPPORT
+		#define SW_VERSION                     		0x01
+        #define DEFAULT_NAME			       		"gamepad"
+        #define DEFAULT_MODEL						"GP_dev"
+	#elif KMFC
+		#define APP_KEY_ENABLE						1
+		#define APP_CMD_ENABLE						1
+		#define TCFG_LOWPOWER_LOWPOWER_SEL			0		/*关闭修改防止定时器不准确*/
+
+		#define API_OTG_BIT_ENABLE					(BIT(0) | BIT(1))
+
+		#define API_USBD_BIT_ENABLE					(BIT(0) | BIT(1))
+		#define USBD_TYPE_SUPPORT					(BIT_ENUM(DEV_TYPE_HID))
+		#define API_AUDIO_ENABLE					1
+		#define USBD_HID_SUPPORT					(HID_GAMEPAD_MASK | BIT_ENUM(HID_TYPE_KB))
+
+		#define API_USBH_BIT_ENABLE					(BIT(0) | BIT(1))
+		#define USBH_TYPE_SUPPORT					(BIT_ENUM(DEV_TYPE_HID) | BIT_ENUM(DEV_TYPE_HUB))
+		#define USBH_HID_SUPPORT					(HID_GAMEPAD_MASK | BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_MOUSE) | BIT_ENUM(HID_TYPE_CONSUMER))
+
+		//bt 		
+		#define BT0_SUPPORT							(BIT_ENUM(TR_BLE))
+		#define BLE_TYPE_SUPPORT					(BIT_ENUM(DEV_TYPE_VENDOR))
+
+		#define DEV_TRPS_DEFAULT					(BIT(TR_BLE)|BIT(TR_USBD))
+		#define SW_VERSION                  		0x01
+        #define DEFAULT_NAME			    		"km_for_consoles"
+        #define DEFAULT_MODEL						"KMFC"
+	#elif KMFCS
+		#define APP_KEY_ENABLE						1
+		#define APP_LED_ENABLE						1
+		#define APP_CMD_ENABLE						1
+		#define TCFG_LOWPOWER_LOWPOWER_SEL			0		/*关闭修改防止定时器不准确*/
+
+		#define API_OTG_BIT_ENABLE					(BIT(0) | BIT(1))
+
+		#define API_USBD_BIT_ENABLE					(BIT(0) | BIT(1))
+		#define USBD_TYPE_SUPPORT					(BIT_ENUM(DEV_TYPE_HID))
+		#define API_AUDIO_ENABLE					1
+		#define USBD_HID_SUPPORT					(HID_GAMEPAD_MASK | BIT_ENUM(HID_TYPE_KB))
+
+		#define API_USBH_BIT_ENABLE					(BIT(0) | BIT(1))
+		#define USBH_TYPE_SUPPORT					(BIT_ENUM(DEV_TYPE_HID) | BIT_ENUM(DEV_TYPE_HUB))
+		#define USBH_HID_SUPPORT					(HID_GAMEPAD_MASK | BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_MOUSE) | BIT_ENUM(HID_TYPE_CONSUMER))
+
+		//bt 		
+		#define BT0_SUPPORT							(BIT_ENUM(TR_BLE))
+		#define BLE_TYPE_SUPPORT					(BIT_ENUM(DEV_TYPE_VENDOR))
+
+		#define DEV_TRPS_DEFAULT					(BIT(TR_BLE)|BIT(TR_USBD))
+		#define SW_VERSION                  		0x01
+        #define DEFAULT_NAME			    		"km_for_consoless"
+        #define DEFAULT_MODEL						"KMFCS"
 	#endif
 #endif
 

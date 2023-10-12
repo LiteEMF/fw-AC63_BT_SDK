@@ -206,26 +206,7 @@ void user_vender_deinit(void)			//关机前deinit
 
 void user_vender_handler(void)
 {
-	//rx uart
     static timer_t timer;
-
-    #ifdef HW_UART_MAP
-    app_fifo_t *fifop = api_uart_get_rx_fifo(1);
-    uint8_t c;
-	command_rx_t rx;
-	static uint8_t s_cmd_buf[UART_CMD_MTU];
-	static uint8_t s_cmd_len = 0;
-    
-	memset(&rx, 0, sizeof(rx));
-
-    while(ERROR_SUCCESS == app_fifo_get(fifop, &c)){
-        // logd("%x",c);
-		// if(api_command_rx_byte(&rx, UART_CMD_MTU, c, s_cmd_buf, &s_cmd_len)){
-		// 	logd("uart cmd %d:",rx.len); dumpd(rx.pcmd, rx.len);
-		// 	command_rx_free(&rx);
-		// }
-    }
-    #endif
 
     // // adc test 
     // static timer_t adc_times = 0;

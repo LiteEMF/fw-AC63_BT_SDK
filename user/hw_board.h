@@ -61,6 +61,36 @@ extern "C" {
 			{PB_02,   pwm_timer1,   (PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch1|PWM_CH_H)},\
 			{PB_06,   pwm_timer2,   (PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch2),VAL2FLD(PWM_ACTIVE,1)},\
 			}
+	#elif KMFC
+		// timer
+		#define API_TIMER_BIT_ENABLE 	BIT(2)
+		#define HW_TIMER_MAP {\
+			{2, VAL2FLD(TIMER_FREQ,1000)|VAL2FLD(TIMER_PRI,1)},	}
+			
+		// uart
+		#define TCFG_UART0_TX_PORT  		IO_PORTA_05
+		#define HW_UART_MAP {\
+			{PA_03, PA_04, 0, 0X100, 0, VAL2FLD(UART_BAUD,1000000)}}
+
+        #define KEY_POWER_GPIO				IO_PORTA_01
+        // mcu 电源
+        #define USB_OUT_EN                  IO_PORTB_04
+
+	#elif KMFCS
+		// timer
+		#define API_TIMER_BIT_ENABLE 	BIT(2)
+		#define HW_TIMER_MAP {\
+			{2, VAL2FLD(TIMER_FREQ,1000)|VAL2FLD(TIMER_PRI,1)},	}
+			
+		// uart
+		#define TCFG_UART0_TX_PORT  		IO_PORTA_05
+		#define HW_UART_MAP {\
+			{PA_03, PA_04, 0, 0X100, 0, VAL2FLD(UART_BAUD,1000000)}}
+
+			
+		#define KEY_POWER_GPIO				IO_PORTA_01
+		#define HW_LED_MAP 					{PB_03, PB_01, PB_00}
+		#define HW_LED_ACTIVE_MAP 			{true,true,true}
 	#endif
 #endif
 

@@ -107,7 +107,20 @@
 		"ps_typedef.h": "c",
 		"ps_crypt.h": "c",
 		"p2.h": "c",
-		"nxp7105.h": "c"
+		"nxp7105.h": "c",
+		"app_led.h": "c",
+		"api_commander.h": "c",
+		"stdlib.h": "c",
+		"stdbool.h": "c",
+		"stdint.h": "c",
+		"string.h": "c",
+		"stdio.h": "c",
+		"limits.h": "c",
+		"stddef.h": "c",
+		"compiler_abstraction.h": "c",
+		"app_command.h": "c",
+		"api_uart.h": "c",
+		"key_typedef.h": "c"
 	},
 	"cmake.sourceDirectory": "D:/work/git/github/fw-AC63_BT_SDK/user/LiteEMF/api/gps"
 }

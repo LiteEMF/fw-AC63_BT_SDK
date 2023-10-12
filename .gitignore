@@ -66,7 +66,7 @@ cpu/**/tools/**/*.ver
 cpu/**/tools/**/*.lst
 cpu/**/tools/**/*.cfg
 cpu/**/tools/**/*.ini
-cpu/**/tools/download/**/download.bat
+# cpu/**/tools/download/**/download.bat
 cpu/**/*.used
 apps/**/board/**/*.bat
 sdk_tools/**/make_gatt_services*
