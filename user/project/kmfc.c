@@ -39,7 +39,7 @@ uint8_t m_led_period[3];
 /******************************************************************************************************
 **	static Parameters
 *******************************************************************************************************/
-
+app_km_t m_uart_km;
 /*****************************************************************************************************
 **	static Function
 ******************************************************************************************************/
@@ -79,11 +79,26 @@ void app_key_vendor_scan(uint32_t *pkey)
 {
 	
 }
+void app_km_vendor_scan(app_km_t* pkey, kb_bit_t *pkey_bit)
+{
+	#if API_USBH_BIT_ENABLE && (USBH_TYPE_SUPPORT & (BIT_ENUM(DEV_TYPE_HID) | BIT_ENUM(DEV_TYPE_AOA))) && (USBH_HID_SUPPORT & (BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_MOUSE)))
+	API_ENTER_CRITICAL();
+
+	if(app_km_fill(pkey, &usbh_km)){
+		app_km_clean(&usbh_km);
+	}
+	API_EXIT_CRITICAL();
+	#endif
+
+	if(app_km_fill(pkey, &m_uart_km)){
+		app_km_clean(&m_uart_km);
+	}
+}
 
 #if KMFC
 void app_key_event(void)
 {
-    if(HW_KEY_POWER & m_app_key.pressed_b){
+    if(HW_KEY_HOME & m_app_key.pressed_b){
 		trp_handle_t handle = {TR_UART, 0, 0};
 
 		if(LED_ON == m_led_period[0]){
@@ -97,6 +112,19 @@ void app_key_event(void)
 		}
 		api_command_tx(&handle, CMD_LED_PERIOD, m_led_period, sizeof(m_led_period) );
 	}
+}
+#endif
+
+#if APP_RUMBLE_ENABLE
+bool app_rumble_show(void)
+{
+	bool ret;
+
+	trp_handle_t usbh_handle = {TR_USBH, 0 ,U16(DEF_DEV_TYPE_HID,usbh_gamepad_type)};
+	usbh_handle.id = usbh_class_find_by_type_all(DEF_DEV_TYPE_HID,usbh_gamepad_type,NULL);
+	ret = app_gamepad_rumble_send(&usbh_handle, &m_rumble);	
+	
+    return ret;
 }
 #endif
 
@@ -140,9 +168,11 @@ void user_vender_deinit(void)			//关机前deinit
 }
 
 
+
 bool app_command_vendor_decode(trp_handle_t *phandle,uint8_t* buf,uint16_t len)
 {
-	logd("uart cmd %d:",len); dumpd(buf, len);
+	bool ret = false;
+	logd("uart cmd %X:",buf[3]); //dumpd(buf, len);
 	switch(buf[3]){
 	case CMD_LED_PERIOD:
 		#if KMFC
@@ -161,10 +191,18 @@ bool app_command_vendor_decode(trp_handle_t *phandle,uint8_t* buf,uint16_t len)
 			api_command_tx(phandle, CMD_LED_PERIOD, m_led_period, m_led_num );
 			logd("app_set_led\n");
 		}
-
 		#endif
-
+		ret = true;
 		break;
+	case CMD_KM_KEY:{
+		app_km_t km;
+		memcpy(&km, &buf[4], len - 5);
+		km.mouse.x = SWAP16_L(km.mouse.x);
+		km.mouse.y = SWAP16_L(km.mouse.y);
+
+		app_km_cache(&m_uart_km, &km);
+		break;
+		}
 	}
 	return false;
 }
@@ -175,11 +213,42 @@ void user_vender_handler(void)
     static timer_t timer;
 
     #ifdef HW_UART_MAP
-	trp_handle_t handle = {TR_UART, 0, 0};
+	trp_handle_t uart_handle = {TR_UART, 0, 0};
     app_fifo_t *fifop = api_uart_get_rx_fifo(0);
 
-	app_command_rx_fifo(&handle, fifop);
+	while(app_command_rx_fifo(&uart_handle, fifop)){
+	}
     #endif
+
+
+
+	#if KMFC
+	if(m_task_tick10us - timer >= 800){
+		timer = m_task_tick10us;
+		usbd_dev_t* pdev = usbd_get_dev(0);
+		trp_handle_t usb_handle = {TR_USBD, 0, 0}; 
+		hid_type_t hid_type = app_gamepad_get_hidtype(m_usbd_hid_types[0]);
+		usb_handle.index = U16(DEF_DEV_TYPE_HID,hid_type);
+		if(pdev->ready){
+			app_gamepad_key_send(&usb_handle,&usbh_gamepad_key);
+		}
+	}
+	#else
+	if(m_task_tick10us - timer >= 100){
+		timer = m_task_tick10us;
+		if(m_app_km.active){
+			app_km_t km = m_app_km;
+			km.mouse.x = SWAP16_L(km.mouse.x);
+			km.mouse.y = SWAP16_L(km.mouse.y);
+			api_command_tx(&uart_handle, CMD_KM_KEY, &km, sizeof(km));
+
+			app_km_clean(&m_app_km);
+		}
+	}
+	#endif
+
+
+	
 }
 
 #endif

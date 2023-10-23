@@ -6,7 +6,7 @@ copy ..\..\tone.cfg .
 copy ..\..\br23loader.bin .
 copy ..\..\script.ver
 
-..\..\isd_download.exe  ..\..\isd_config.ini -tonorflash -dev br23 -boot 0x12000 -div8 -wait 300 -uboot ..\..\uboot.boot -app ..\..\app.bin ..\..\cfg_tool.bin -ota_file ..\..\ota_all.bin  -format all 
+..\..\isd_download.exe  ..\..\isd_config.ini -tonorflash -dev br23 -boot 0x12000 -div8 -wait 300 -uboot ..\..\uboot.boot -app ..\..\app.bin ..\..\cfg_tool.bin -ota_file ..\..\ota_all.bin -reboot 1500
 :: -format all
 ::-reboot 2500
 

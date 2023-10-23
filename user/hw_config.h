@@ -33,17 +33,35 @@ extern "C" {
 
 
 
-#define PROJECT_KM                  0           //keyboard and mouse project
-#define PROJECT_GAMEPAD             1           //keyboard and mouse
+#define PROJECT_KM                  1           //keyboard and mouse project
+#define PROJECT_GAMEPAD             0           //keyboard and mouse
 
 #if PROJECT_KM
 
 	#define HELLOW_KEYBOARD						1
 	#if HELLOW_KEYBOARD
-		#define DEV_TRPS_DEFAULT				(BIT(TR_BLE)|BIT(TR_USBD))		/*产品传输层支持*/
-		#define SW_VERSION                     	0x01
-        #define DEFAULT_NAME			       	"hellow_keyboard"
-        #define DEFAULT_MODEL					"HKB"
+
+		#define APP_KEY_ENABLE						1
+		#define APP_CMD_ENABLE						1
+		#define APP_KM_ENABLE						1
+		#define TCFG_LOWPOWER_LOWPOWER_SEL			0		/*关闭修改防止定时器不准确*/
+
+		#define API_OTG_BIT_ENABLE					(BIT(0) | BIT(1))
+
+		#define API_USBD_BIT_ENABLE					(BIT(0) | BIT(1))
+		#define USBD_TYPE_SUPPORT					(BIT_ENUM(DEV_TYPE_HID))
+		#define API_AUDIO_ENABLE					1
+		#define USBD_HID_SUPPORT					BIT_ENUM(HID_TYPE_MOUSE)
+
+		//bt 		
+		#define BT0_SUPPORT							(BIT_ENUM(TR_BLE))
+		#define BLE_TYPE_SUPPORT					(BIT_ENUM(DEV_TYPE_VENDOR))
+
+		#define DEV_TRPS_DEFAULT					(BIT(TR_BLE)|BIT(TR_USBD))
+		#define SW_VERSION                  		0x01
+        #define DEFAULT_NAME			    		"hellow_keyboard"
+        #define DEFAULT_MODEL						"HELKB"
+
 	#else
 
 	#endif
@@ -53,8 +71,6 @@ extern "C" {
 	#define KMFC						1
 	#define KMFCS						0
 
-	
-	
 
 	#if GAMEPAD1	
 		#define APP_KEY_ENABLE			1
@@ -104,6 +120,8 @@ extern "C" {
 	#elif KMFC
 		#define APP_KEY_ENABLE						1
 		#define APP_CMD_ENABLE						1
+		#define APP_KM_ENABLE						1
+		#define APP_RUMBLE_ENABLE					1
 		#define TCFG_LOWPOWER_LOWPOWER_SEL			0		/*关闭修改防止定时器不准确*/
 
 		#define API_OTG_BIT_ENABLE					(BIT(0) | BIT(1))
@@ -117,6 +135,9 @@ extern "C" {
 		#define USBH_TYPE_SUPPORT					(BIT_ENUM(DEV_TYPE_HID) | BIT_ENUM(DEV_TYPE_HUB))
 		#define USBH_HID_SUPPORT					(HID_GAMEPAD_MASK | BIT_ENUM(HID_TYPE_KB) | BIT_ENUM(HID_TYPE_MOUSE) | BIT_ENUM(HID_TYPE_CONSUMER))
 
+		#define USBD_SOCKET_ENABLE					1
+		#define USBH_SOCKET_ENABLE					1
+
 		//bt 		
 		#define BT0_SUPPORT							(BIT_ENUM(TR_BLE))
 		#define BLE_TYPE_SUPPORT					(BIT_ENUM(DEV_TYPE_VENDOR))
@@ -129,6 +150,7 @@ extern "C" {
 		#define APP_KEY_ENABLE						1
 		#define APP_LED_ENABLE						1
 		#define APP_CMD_ENABLE						1
+		#define APP_KM_ENABLE						1
 		#define TCFG_LOWPOWER_LOWPOWER_SEL			0		/*关闭修改防止定时器不准确*/
 
 		#define API_OTG_BIT_ENABLE					(BIT(0) | BIT(1))

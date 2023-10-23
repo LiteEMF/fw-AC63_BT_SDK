@@ -25,6 +25,24 @@ extern "C" {
 *******************************************************************************************************/
 #if PROJECT_KM
 
+	#if HELLOW_KEYBOARD	
+	// timer
+		#define API_TIMER_BIT_ENABLE 	BIT(2)
+		#define HW_TIMER_MAP {\
+			{2, VAL2FLD(TIMER_FREQ,1000)|VAL2FLD(TIMER_PRI,1)},	}
+			
+		// uart
+		#define TCFG_UART0_TX_PORT  		IO_PORTA_05
+		#define HW_UART_MAP {\
+			{PA_03, PA_04, 0, 0X100, 0, VAL2FLD(UART_BAUD,1000000)}}
+
+			
+		#define KEY_HOME_GPIO				IO_PORTA_01
+		#define HW_LED_MAP 					{PB_03, PB_01, PB_00}
+		#define HW_LED_ACTIVE_MAP 			{true,true,true}
+		
+	#endif
+
 #elif PROJECT_GAMEPAD
 	#if GAMEPAD1
 		// timer
@@ -72,7 +90,7 @@ extern "C" {
 		#define HW_UART_MAP {\
 			{PA_03, PA_04, 0, 0X100, 0, VAL2FLD(UART_BAUD,1000000)}}
 
-        #define KEY_POWER_GPIO				IO_PORTA_01
+        #define KEY_HOME_GPIO				IO_PORTA_01
         // mcu 电源
         #define USB_OUT_EN                  IO_PORTB_04
 
@@ -88,7 +106,7 @@ extern "C" {
 			{PA_03, PA_04, 0, 0X100, 0, VAL2FLD(UART_BAUD,1000000)}}
 
 			
-		#define KEY_POWER_GPIO				IO_PORTA_01
+		#define KEY_HOME_GPIO				IO_PORTA_01
 		#define HW_LED_MAP 					{PB_03, PB_01, PB_00}
 		#define HW_LED_ACTIVE_MAP 			{true,true,true}
 	#endif

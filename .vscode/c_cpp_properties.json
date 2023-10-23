@@ -49,7 +49,8 @@
                 "__LD__",
                 "__Q32S__",
                 "LITEEMF_ENABLED",
-                "sec(n)="
+                "sec(n)=",
+                "asm=__asm__"
             ],
             "includePath": [
                 "${workspaceFolder}/user/emf_ac63_hal/",
@@ -154,7 +155,8 @@
                 "__LD__",
                 "__PI32V2__",
                 "LITEEMF_ENABLED",
-                "sec(n)="
+                "sec(n)=",
+                "asm=__asm__"
             ],
             "includePath": [
                 "${workspaceFolder}/user/emf_ac63_hal/",

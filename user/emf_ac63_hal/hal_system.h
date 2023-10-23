@@ -13,6 +13,7 @@
 #ifndef _hal_system_h
 #define _hal_system_h
 #include "emf_typedef.h" 
+#include "os/os_cpu.h"
 
 #ifdef __cplusplus
 extern "C" {
