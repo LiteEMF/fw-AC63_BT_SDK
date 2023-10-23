@@ -338,7 +338,7 @@ error_t hal_usbd_endp_ack(uint8_t id, uint8_t ep, uint16_t len)
 
 	switch (ep) {
     case 0x80:
-        if(resolve_len){
+        if(len == USBD_ENDP0_MTU){
             usb_write_csr0(id, CSR0P_TxPktRdy);         //0x02:in ack
         }else{
             usb_ep0_TxPktEnd(id);                       //0x0a:in包最后的 out ack
@@ -420,7 +420,7 @@ error_t hal_usbd_in(uint8_t id, uint8_t ep, uint8_t* buf,uint16_t len)
                 err = hal_usbd_endp_ack(id, ep, send_len);  
 
                 preq->setup_index += send_len;
-                if(preq->setup_len == preq->setup_index){    //判断发送最后一包数据 的 out
+                if(USBD_ENDP0_MTU != send_len){//简单处理, 如果严格需要按照远程例程判断主机请求数据长度条件判断发送最后一包数据 的 out
                     usbd_free_setup_buffer(preq);           //发送完成释放内存
                     // hal_usbd_endp_ack(id, 0x00, 0);      //杰里在hal_usbd_endp_ack(id, 80,len)中设置 out ack
                 }
