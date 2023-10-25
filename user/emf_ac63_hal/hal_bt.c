@@ -189,11 +189,11 @@ bool hal_bt_select_mode(uint8_t id,uint16_t trps)
 }
 
 
-//BLE + hid 从机接收数据
+//BLE 从机接收数据
 void ble_hid_transfer_channel_recieve(uint8_t* p_attrib_value,uint16_t length)
 {
     bt_evt_rx_t evt;
-    evt.bts = BT_HID;
+    evt.bts = BT_UART;
 	evt.buf = p_attrib_value;
 	evt.len = length;
     if(length) api_bt_event(BT_ID0,BT_BLE,BT_EVT_RX,&evt);    
