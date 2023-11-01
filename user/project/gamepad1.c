@@ -89,49 +89,6 @@ void usbh_class_itf_alt_select(uint8_t id,usbh_class_t* pclass)
 }
 #endif
 
-#if API_USBD_BIT_ENABLE
-
-char* usbd_user_get_string(uint8_t id, uint8_t index)
-{
-	char *pstr = NULL;
-
-	if(2 == index){		//product string
-		if(m_usbd_types[id] & BIT(DEV_TYPE_HID)){
-			if(m_usbd_hid_types[id] & HID_SWITCH_MASK){
-				pstr = "Pro Controller";
-			}else if(m_usbd_hid_types[id] & HID_PS_MASK){
-				pstr = "Wireless Controller";
-			}else if(m_usbd_hid_types[id] & HID_XBOX_MASK){
-				pstr = "Controller";
-			}else if(m_usbd_hid_types[id] & BIT(HID_TYPE_GAMEPADE)){
-				pstr = "Hid Gamepade";
-			}else if(m_usbd_hid_types[id] & (BIT(HID_TYPE_MT) | BIT(HID_TYPE_TOUCH))){
-				pstr = "Touch Screen";
-			}else if(m_usbd_hid_types[id] & BIT(HID_TYPE_MOUSE)){
-				pstr = "mouse";
-			}else if(m_usbd_hid_types[id] & BIT(HID_TYPE_KB)){
-				pstr = "keyboard";
-			}else if(m_usbd_hid_types[id] & BIT(HID_TYPE_VENDOR)){
-				pstr = "Hid Vendor";
-			}
-		}else if(m_usbd_types[id] & BIT(DEV_TYPE_IAP2)){
-			pstr = "iap";
-		}else if(m_usbd_types[id] & BIT(DEV_TYPE_MSD)){
-			pstr = "msd";
-		}else if(m_usbd_types[id] & BIT(DEV_TYPE_PRINTER)){
-			pstr = "printer";
-		}else if(m_usbd_types[id] & BIT(DEV_TYPE_CDC)){
-			pstr = "cdc";
-		}else if(m_usbd_types[id] & BIT(DEV_TYPE_AUDIO)){
-			pstr = "uac";
-		}else{
-			pstr = (char*)usbd_string_desc[index];
-		}
-	}
-		
-	return pstr;
-}
-#endif
 
 
 #if API_BT_ENABLE

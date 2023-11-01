@@ -138,7 +138,9 @@
 #define TCFG_USB_SLAVE_CDC_ENABLE           0
 #endif
 
-#define TCFG_OTG_SLAVE_ONLINE_CNT           2
+//修改这里是延长从机识别时间,有的设备会延时后才把DP拉高,导致识别成从机
+//普通键盘基本上50ms就可以检测,但是XOBX手柄需要200ms以后PD才会拉高
+#define TCFG_OTG_SLAVE_ONLINE_CNT           5
 #define TCFG_OTG_SLAVE_OFFLINE_CNT          2
 
 #define TCFG_OTG_HOST_ONLINE_CNT            2

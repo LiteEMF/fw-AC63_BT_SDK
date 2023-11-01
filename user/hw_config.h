@@ -33,8 +33,8 @@ extern "C" {
 
 
 
-#define PROJECT_KM                  1           //keyboard and mouse project
-#define PROJECT_GAMEPAD             0           //keyboard and mouse
+#define PROJECT_KM                  0           //keyboard and mouse project
+#define PROJECT_GAMEPAD             1           //keyboard and mouse
 
 #if PROJECT_KM
 
