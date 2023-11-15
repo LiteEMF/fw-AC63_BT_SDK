@@ -58,7 +58,7 @@ void api_timer_hook(uint8_t id)
         if(0 == heartbeat_msg_cnt){
             int err = os_taskq_post_msg(TASK_NAME, 1, HEARTBEAT_EVENT);
             if(err){
-                logd("heatbeat post err!!!\n");
+                logd("HB post err!!!\n");
             }else{
                 heartbeat_msg_cnt = 1;
             }
@@ -187,6 +187,10 @@ static void liteemf_app_start()
     emf_api_init();
     emf_init();
 
+    #if BT_ENABLE
+    api_bt_init();
+    #endif
+
     logd("start end\n");
     os_task_create(emf_task_handle,NULL,2,2048,512,"emf_task");
     heartbeat_msg_cnt = 0;
@@ -197,9 +201,7 @@ static void liteemf_app_start()
 	os_task_create(ps_task_handle,NULL,1,256,64,"ps_task");
 	#endif
 
-    #if BT_ENABLE
-    api_bt_init();
-    #endif
+ 
 }
 
 /*******************************************************************

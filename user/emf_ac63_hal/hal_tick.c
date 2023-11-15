@@ -48,6 +48,7 @@ void hal_delay_ns(uint32_t ns)
         if(ns <= 1120) return;
         delay((ns-1120) / 380);                     //24M
     }else{
+        if(ns <= 70) return;
         delay((ns-70) / 50);                        //96M
     }
 }

@@ -19,7 +19,6 @@
 #include  "api/api_pwm.h"
 #include  "api/api_gpio.h"
 
-#include "asm/mcpwm.h"
 #include "asm/clock.h"
 #include "system/includes.h"
 

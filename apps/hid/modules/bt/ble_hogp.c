@@ -504,7 +504,7 @@ static int hogp_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_pa
             bt_ctbp = api_bt_get_ctb(BT_BLE);
         }
         if(NULL != bt_ctbp){
-            bt_ctbp->inteval = little_endian_read_16(ext_param, 14 + 0);
+            bt_ctbp->inteval_10us = 125 * little_endian_read_16(ext_param, 14 + 0);
         }
         #endif
 
@@ -600,7 +600,7 @@ static int hogp_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_pa
             bt_ctbp = api_bt_get_ctb(BT_BLE);
         }
         if(NULL != bt_ctbp){
-            bt_ctbp->inteval = little_endian_read_16(ext_param, 14 + 0);
+            bt_ctbp->inteval_10us = 125 * little_endian_read_16(ext_param, 14 + 0);
         }
         logi_y("update:interval, latency, timout = %d ms, %d, %d ms\n", little_endian_read_16(ext_param, 6 + 0)*125/100, little_endian_read_16(ext_param, 6 + 2), little_endian_read_16(ext_param, 6 + 4)*10);
         #endif

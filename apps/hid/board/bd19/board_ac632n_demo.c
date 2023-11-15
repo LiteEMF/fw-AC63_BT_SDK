@@ -516,7 +516,7 @@ static void close_gpio(u8 is_softoff)
 #ifdef KEY_POWER_GPIO
 struct port_wakeup port0 = {
 	.pullup_down_enable = (POWER_KEY_PULL == PIN_PULLNONE)? DISABLE: ENABLE,                            //配置I/O 内部上下拉是否使能
-	.edge               = POWER_KEY_ACTIVE? FALLING_EDGE:RISING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
+	.edge               = POWER_KEY_ACTIVE? RISING_EDGE:FALLING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
     .both_edge          = 0,
 	.iomap              = KEY_POWER_GPIO,         //唤醒口选择
     .filter             = PORT_FLT_2ms,

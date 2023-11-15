@@ -12,7 +12,8 @@
 /************************************************************************************************************
 **	Description:	
 ************************************************************************************************************/
-#include  "api/api_pm.h"
+#include "api/api_pm.h"
+#include "asm/power_interface.h"
 
 /******************************************************************************************************
 ** Defined
@@ -22,27 +23,40 @@
 **  Function
 ******************************************************************************************************/
 
-/*******************************************************************
-** Parameters:		
-** Returns:	
-** Description:		
-*******************************************************************/
-void hal_weakup_init(void)
-{
-}
-
+extern uint32_t power_reset_src;
 pm_reson_t hal_get_reset_reson(void)
 {
-	return PM_RESON_POR;
+	#if API_STORAGE_ENABLE
+	if(SOFT_RESET_MASK == m_storage.reset_reson){
+		m_storage.reset_reson = 0;
+		return PM_RESON_SOFT;
+	}
+	#endif
+
+	if(power_reset_src  & BIT(0)){
+		return PM_RESON_POR;
+	}else{
+		return PM_RESON_SYS;
+	}
 }
+
+extern void go_mask_usb_updata(void);
+extern void chip_reboot_entry_uboot_uart_upgrade_mode();
 void hal_boot(uint8_t index)
 {
+	if(2 == index){
+		chip_reboot_entry_uboot_uart_upgrade_mode();
+	}else{
+		go_mask_usb_updata();
+	}
 }
 void hal_reset(void)
 {
+	cpu_reset();
 }
 void hal_sleep(void)
 {
+	power_set_soft_poweroff();
 }
 
 

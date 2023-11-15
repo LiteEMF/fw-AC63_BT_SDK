@@ -234,7 +234,7 @@ void board_init()
 #ifdef KEY_POWER_GPIO
 struct port_wakeup port0 = {
 	.pullup_down_enable = (POWER_KEY_PULL == PIN_PULLNONE)? DISABLE: ENABLE,                            //配置I/O 内部上下拉是否使能
-	.edge               = POWER_KEY_ACTIVE? FALLING_EDGE:RISING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
+	.edge               = POWER_KEY_ACTIVE? RISING_EDGE:FALLING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
 	.attribute          = BLUETOOTH_RESUME,                  //保留参数
     .iomap              = KEY_POWER_GPIO,         //唤醒口选择
     .filter_enable      = ENABLE,
@@ -309,7 +309,7 @@ struct port_wakeup port7 = {
 //-----------------------------------------------
 #if defined KEY_USB_DET_GPIO              //适配外部充电
 static struct port_wakeup usbdet_port = {
-	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
+	.pullup_down_enable = DISABLE,                            //配置I/O 内部上下拉是否使能
 	.edge               = RISING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
 	.attribute          = BLUETOOTH_RESUME,                  //保留参数
 	.iomap              = KEY_USB_DET_GPIO,                                 //唤醒口选择

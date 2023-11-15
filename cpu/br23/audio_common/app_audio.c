@@ -1314,7 +1314,7 @@ s8 mic_capless_auto_adjust(void)
  *2、vm被擦除
  *3、每次开机都校准
  */
-extern u8 power_reset_src;
+extern u32 power_reset_src;
 u8 mc_bias_adjust_check()
 {
 #if(TCFG_MC_BIAS_AUTO_ADJUST == MC_BIAS_ADJUST_ALWAYS)

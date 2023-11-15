@@ -150,7 +150,7 @@ void timer(void *p)
     /* DEBUG_SINGAL_1S(0);*/
 }
 
-u8 power_reset_src = 0;
+u32 power_reset_src = 0;
 extern void sputchar(char c);
 extern void sput_buf(const u8 *buf, int len);
 void sput_u32hex(u32 dat);

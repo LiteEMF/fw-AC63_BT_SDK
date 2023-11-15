@@ -33,6 +33,10 @@ extern "C" {
 
 
 
+/******************************************************************************************************
+** Project Defined
+*******************************************************************************************************/
+
 #define PROJECT_KM                  0           //keyboard and mouse project
 #define PROJECT_GAMEPAD             1           //keyboard and mouse
 
@@ -67,8 +71,9 @@ extern "C" {
 	#endif
 
 #elif PROJECT_GAMEPAD
-	#define GAMEPAD1					0
-	#define KMFC						1
+	#define GAMEPAD1					0				//测试工程
+	#define GAMEPAD_DEMO				1				//实际一个gamepad demo例程
+	#define KMFC						0
 	#define KMFCS						0
 
 
@@ -117,6 +122,43 @@ extern "C" {
 		#define SW_VERSION                     		0x01
         #define DEFAULT_NAME			       		"gamepad"
         #define DEFAULT_MODEL						"GP_dev"
+	#elif GAMEPAD_DEMO	
+		#define API_PM_ENABLE				1
+		#define APP_KEY_ENABLE				1
+		#define KEY_DUMP_ENABLE 			1
+		#define APP_CMD_ENABLE				1
+		#define TCFG_LOWPOWER_LOWPOWER_SEL	0		/*关闭修改防止定时器不准确*/
+		#define APP_RGB_ENABLE				1
+		#define APP_RGB_NUMS				1
+
+		#define APP_JOYSTICK_ENABLE			1
+		#define STICK_CAL_DEADZONE          10       //中心死区百分百
+		#define TRIGGER_CAL_DEADZONE		5      //中心死区百分百
+		#define APP_STICK_ACTIVE 			{{true, false},{true, false}}
+		#define APP_TRIGGER_ACTIVE 			{false, false}
+
+
+		#define API_USBD_BIT_ENABLE			BIT(0)
+		#define USBD_TYPE_SUPPORT			(BIT_ENUM(DEV_TYPE_HID))
+		#define USBD_HID_SUPPORT			(BIT_ENUM(HID_TYPE_PS4))
+
+		//bt 
+		#define BT0_SUPPORT					(BIT_ENUM(TR_BLE) | BIT_ENUM(TR_EDR))
+		#define EDR_TYPE_SUPPORT			BIT_ENUM(DEV_TYPE_HID)
+		#define BLE_TYPE_SUPPORT			(BIT_ENUM(DEV_TYPE_HID) | BIT_ENUM(DEV_TYPE_VENDOR))
+		#define BLE_HID_SUPPORT				BIT_ENUM(HID_TYPE_XBOX)
+		#define EDR_HID_SUPPORT				BIT_ENUM(HID_TYPE_XBOX)
+		#define EDR_ICON					BD_CLASS_GAMEPAD
+
+
+		#define DISCONNECTED_SLEEP_TIME    	(30*1000*60UL)
+		#define CONNECTED_SLEEP_TIME    	(15*1000*60UL)
+
+		#define DEV_TRPS_DEFAULT					BT0_SUPPORT
+		#define SW_VERSION                     		0x01
+        #define DEFAULT_NAME			       		"gamepad_demo"
+        #define DEFAULT_MODEL						"GP_demo"
+	
 	#elif KMFC
 		#define APP_KEY_ENABLE						1
 		#define APP_CMD_ENABLE						1

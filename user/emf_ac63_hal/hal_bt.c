@@ -13,7 +13,9 @@
 #if API_BT_ENABLE
 #include "api/bt/api_bt.h"
 #include "api/api_log.h"
-
+#if API_PM_ENABLE
+#include "api/api_pm.h"
+#endif
 
 
 
@@ -114,7 +116,15 @@ extern void ble_set_pair_addrinfo(u8 *addr_info);
 
 void bt_sniff_param_hook(u8 *addr, u16 t_sniff)
 {
-    logd_g("bt edr sniff = %d...\n",t_sniff);
+    uint32_t interval_us;
+    api_bt_ctb_t* bt_ctbp = api_bt_get_ctb(BT_EDR);
+
+    interval_us = t_sniff*625;
+    logd_g("bt edr sniff = %d %dus...\n",t_sniff, interval_us);
+
+    if(NULL != bt_ctbp){
+        bt_ctbp->inteval_10us = interval_us / 10;
+    }
 }
 
 //选择蓝牙从机模式

@@ -13,7 +13,7 @@
 #ifndef _hal_pwm_h
 #define _hal_pwm_h
 #include "emf_typedef.h" 
-
+#include "asm/mcpwm.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
