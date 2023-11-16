@@ -1808,7 +1808,7 @@ int ble_hid_data_send(u8 report_id, u8 *data, u16 len)
         return -1;
     }
 
-    putchar('@');
+    // putchar('@');
     return ble_comm_att_send_data(hogp_con_handle, report_id_handle_table[report_id], data, len, ATT_OP_AUTO_READ_CCC);
 }
 

@@ -200,7 +200,7 @@ void user_vender_handler(void)
 
 			#if USBD_HID_SUPPORT & BIT_ENUM(HID_TYPE_KB)
 			pdev = usbd_get_dev(TEST_USB_ID);
-			usb_handle.index = U16(DEF_DEV_TYPE_HID,DEF_HID_TYPE_KB);
+			usb_handle.index = U16(DEV_TYPE_HID,DEF_HID_TYPE_KB);
 			if(pdev->ready){
 				api_transport_tx(&usb_handle,&kb,sizeof(kb));
 			}
@@ -209,8 +209,8 @@ void user_vender_handler(void)
 			#if BLE_HID_SUPPORT & BIT_ENUM(HID_TYPE_KB)
 			bt_ctbp = api_bt_get_ctb(BT_BLE);
 			bt_handle.trp = TR_BLE;
-			bt_handle.index = U16(DEF_DEV_TYPE_HID,DEF_HID_TYPE_KB);
-			if(bt_ctbp->sta == BT_STA_READY){
+			bt_handle.index = U16(DEV_TYPE_HID,DEF_HID_TYPE_KB);
+			if(bt_ctbp->sta == BT_STA_CONN){
 				api_transport_tx(&bt_handle,&kb,sizeof(kb));
 			}
 			#endif
@@ -218,8 +218,8 @@ void user_vender_handler(void)
 			#if EDR_HID_SUPPORT & BIT_ENUM(HID_TYPE_KB)
 			bt_ctbp = api_bt_get_ctb(BT_EDR);
 			bt_handle.trp = TR_EDR;
-			bt_handle.index = U16(DEF_DEV_TYPE_HID,DEF_HID_TYPE_KB);
-			if(bt_ctbp->sta == BT_STA_READY){
+			bt_handle.index = U16(DEV_TYPE_HID,DEF_HID_TYPE_KB);
+			if(bt_ctbp->sta == BT_STA_CONN){
 				api_transport_tx(&bt_handle,&kb,sizeof(kb));
 			}
 			#endif
@@ -238,7 +238,7 @@ void user_vender_handler(void)
 
 			#if USBD_HID_SUPPORT & BIT_ENUM(HID_TYPE_MOUSE)
 			pdev = usbd_get_dev(TEST_USB_ID);
-			usb_handle.index = U16(DEF_DEV_TYPE_HID,HID_TYPE_MOUSE);
+			usb_handle.index = U16(DEV_TYPE_HID,HID_TYPE_MOUSE);
 			if(pdev->ready){
 				api_transport_tx(&usb_handle,&mouse,sizeof(mouse));
 			}
@@ -247,8 +247,8 @@ void user_vender_handler(void)
 			#if BLE_HID_SUPPORT & BIT_ENUM(HID_TYPE_MOUSE)
 			bt_ctbp = api_bt_get_ctb(BT_BLE);
 			bt_handle.trp = TR_BLE;
-			bt_handle.index = U16(DEF_DEV_TYPE_HID,HID_TYPE_MOUSE);
-			if(bt_ctbp->sta == BT_STA_READY){
+			bt_handle.index = U16(DEV_TYPE_HID,HID_TYPE_MOUSE);
+			if(bt_ctbp->sta == BT_STA_CONN){
 				api_transport_tx(&bt_handle,&mouse,sizeof(mouse));
 			}
 			#endif
@@ -256,8 +256,8 @@ void user_vender_handler(void)
 			#if EDR_HID_SUPPORT & BIT_ENUM(HID_TYPE_MOUSE)
 			bt_ctbp = api_bt_get_ctb(BT_EDR);
 			bt_handle.trp = TR_EDR;
-			bt_handle.index = U16(DEF_DEV_TYPE_HID,HID_TYPE_MOUSE);
-			if(bt_ctbp->sta == BT_STA_READY){
+			bt_handle.index = U16(DEV_TYPE_HID,HID_TYPE_MOUSE);
+			if(bt_ctbp->sta == BT_STA_CONN){
 				api_transport_tx(&bt_handle,&mouse,sizeof(mouse));
 			}
 			#endif
@@ -274,7 +274,7 @@ void user_vender_handler(void)
 			#if USBD_HID_SUPPORT
 			pdev = usbd_get_dev(TEST_USB_ID);
 			hid_type = app_gamepad_get_hidtype(m_usbd_hid_types[TEST_USB_ID]);
-			usb_handle.index = U16(DEF_DEV_TYPE_HID,hid_type);
+			usb_handle.index = U16(DEV_TYPE_HID,hid_type);
 			if(pdev->ready){
 				app_gamepad_key_send(&usb_handle,&key);
 			}
@@ -284,8 +284,8 @@ void user_vender_handler(void)
 			bt_ctbp = api_bt_get_ctb(BT_BLE);
 			hid_type = app_gamepad_get_hidtype(bt_ctbp->hid_types);
 			bt_handle.trp = TR_BLE;
-			bt_handle.index = U16(DEF_DEV_TYPE_HID,hid_type);
-			if(bt_ctbp->sta == BT_STA_READY){
+			bt_handle.index = U16(DEV_TYPE_HID,hid_type);
+			if(bt_ctbp->sta == BT_STA_CONN){
 				app_gamepad_key_send(&bt_handle,&key);
 			}
 			#endif
@@ -294,8 +294,8 @@ void user_vender_handler(void)
 			bt_ctbp = api_bt_get_ctb(BT_EDR);
 			hid_type = app_gamepad_get_hidtype(bt_ctbp->hid_types);
 			bt_handle.trp = TR_EDR;
-			bt_handle.index = U16(DEF_DEV_TYPE_HID,hid_type);
-			if(bt_ctbp->sta == BT_STA_READY){
+			bt_handle.index = U16(DEV_TYPE_HID,hid_type);
+			if(bt_ctbp->sta == BT_STA_CONN){
 				app_gamepad_key_send(&bt_handle,&key);
 			}
 			#endif

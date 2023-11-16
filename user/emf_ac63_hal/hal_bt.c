@@ -30,6 +30,7 @@
 #include "standard_hid.h"
 #include "rcsp_bluetooth.h"
 #include "app_comm_bt.h"
+#include "spp_trans.h"
 
 /*******************************************************************************************************************
 **	Hardware  Defined
@@ -257,9 +258,13 @@ void ble_status_callback(ble_state_e status, u8 reason)
     case BLE_ST_DISCONN:
         api_bt_event(BT_ID0,bt,BT_EVT_DISCONNECTED,NULL);
         break;
-    case BLE_ST_NOTIFY_IDICATE:
-        api_bt_event(BT_ID0,bt,BT_EVT_READY,NULL);;
+    case BLE_ST_NOTIFY_IDICATE:{
+        bt_evt_ready_t evt;
+        evt.bts = BT_UART;
+        evt.ready = true;
+        api_bt_event(BT_ID0,bt,BT_EVT_READY,&evt);
         break;
+    }
     case BLE_PRIV_PAIR_ENCRYPTION_CHANGE:               //ble 2.4g切换保存当前配对信息
         logd("BLE_PRIV_PAIR_ENCRYPTION_CHANGE\n");
         // pair_info_address_update(bt, ble_cur_connect_addrinfo());   //TODO
@@ -306,7 +311,6 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
     case BT_STATUS_SECOND_CONNECTED:
     case BT_STATUS_FIRST_CONNECTED:
         api_bt_event(BT_ID0,BT_EDR,BT_EVT_CONNECTED,NULL);
-        api_bt_event(BT_ID0,BT_EDR,BT_EVT_READY,NULL);
         break;
     case BT_STATUS_FIRST_DISCONNECT:
     case BT_STATUS_SECOND_DISCONNECT:
@@ -591,9 +595,9 @@ bool hal_bt_uart_tx(uint8_t id, bt_t bt,uint8_t *buf, uint16_t len)
         return  multi_client_user_server_write( buf,  len);
         break;
     #endif
-    #if BT0_SUPPORT & BIT_ENUM(TR_EDR)
+    #if (BT0_SUPPORT & BIT_ENUM(TR_EDR)) && (EDR_TYPE_SUPPORT & BIT_ENUM(DEV_TYPE_VENDOR))
     case BT_EDR: 	
-	       //unsupport
+	    return (0 == transport_spp_send_data(buf, len));
         break;
     #endif
     #if BT0_SUPPORT & BIT_ENUM(TR_EDRC)
@@ -718,7 +722,9 @@ bool hal_bt_init(uint8_t id)
     #if TCFG_USER_EDR_ENABLE
     btstack_edr_start_before_init(&edr_default_config, 0);
     //change init
+    #if USER_SUPPORT_PROFILE_HID
     user_hid_init(edr_out_callback);
+    #endif
     #endif
 
     #if TCFG_USER_BLE_ENABLE

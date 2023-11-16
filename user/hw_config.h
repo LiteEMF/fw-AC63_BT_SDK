@@ -123,9 +123,10 @@ extern "C" {
         #define DEFAULT_NAME			       		"gamepad"
         #define DEFAULT_MODEL						"GP_dev"
 	#elif GAMEPAD_DEMO	
+		#define API_STORAGE_ENABLE			1
 		#define API_PM_ENABLE				1
 		#define APP_KEY_ENABLE				1
-		#define KEY_DUMP_ENABLE 			1
+		//#define KEY_DUMP_ENABLE 			1
 		#define APP_CMD_ENABLE				1
 		#define TCFG_LOWPOWER_LOWPOWER_SEL	0		/*关闭修改防止定时器不准确*/
 		#define APP_RGB_ENABLE				1
@@ -136,15 +137,16 @@ extern "C" {
 		#define TRIGGER_CAL_DEADZONE		5      //中心死区百分百
 		#define APP_STICK_ACTIVE 			{{true, false},{true, false}}
 		#define APP_TRIGGER_ACTIVE 			{false, false}
+		#define TRIGGER_LIMIT_MIN_R 		350
 
 
 		#define API_USBD_BIT_ENABLE			BIT(0)
 		#define USBD_TYPE_SUPPORT			(BIT_ENUM(DEV_TYPE_HID))
-		#define USBD_HID_SUPPORT			(BIT_ENUM(HID_TYPE_PS4))
+		#define USBD_HID_SUPPORT			(BIT_ENUM(HID_TYPE_X360))
 
 		//bt 
 		#define BT0_SUPPORT					(BIT_ENUM(TR_BLE) | BIT_ENUM(TR_EDR))
-		#define EDR_TYPE_SUPPORT			BIT_ENUM(DEV_TYPE_HID)
+		#define EDR_TYPE_SUPPORT			(BIT_ENUM(DEV_TYPE_HID) | BIT_ENUM(DEV_TYPE_VENDOR))
 		#define BLE_TYPE_SUPPORT			(BIT_ENUM(DEV_TYPE_HID) | BIT_ENUM(DEV_TYPE_VENDOR))
 		#define BLE_HID_SUPPORT				BIT_ENUM(HID_TYPE_XBOX)
 		#define EDR_HID_SUPPORT				BIT_ENUM(HID_TYPE_XBOX)
@@ -278,9 +280,12 @@ extern "C" {
 #endif
 #if BT0_SUPPORT & (BIT_ENUM(TR_EDR) | BIT_ENUM(TR_EDRC))
 	#define TCFG_USER_EDR_ENABLE                1
+	#define USER_SUPPORT_PROFILE_SPP    BOOL_SET(EDR_TYPE_SUPPORT & BIT_ENUM(DEV_TYPE_VENDOR))
+	#define USER_SUPPORT_PROFILE_HID    BOOL_SET(EDR_TYPE_SUPPORT & BIT_ENUM(DEV_TYPE_HID))
 #else
 	#define TCFG_USER_EDR_ENABLE                0
 #endif
+
 
 #if (BT0_SUPPORT & BIT_ENUM(TR_BLE)) && BLE_HID_SUPPORT
 #define CONFIG_BT_SM_SUPPORT_ENABLE        	1

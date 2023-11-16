@@ -128,7 +128,7 @@ void app_key_event(void)
     }else{
 		key_cal_event = false;
 	}
-	if(JOYSTICK_CAL_NONE == joystick_cal_sta){
+	if(JOYSTICK_CAL_NONE != joystick_cal_sta){
 		if(HW_KEY_A & m_app_key.pressed_b){
 			app_joystack_cal_end();
 		}
@@ -216,32 +216,55 @@ bool bt_gamepad_key_send(bt_t bt, app_gamepad_key_t *keyp)
 	return app_gamepad_key_send(&bt_handle, keyp);
 }
 
+bool usb_gamepad_key_send(uint8_t id, app_gamepad_key_t *keyp)
+{
+	trp_handle_t usb_handle;
+	usbd_dev_t* pdev = usbd_get_dev(id);
+	hid_type_t hid_type;
+
+	hid_type = app_gamepad_get_hidtype(m_usbd_hid_types[id]);
+	usb_handle.id = id;
+	usb_handle.trp = TR_USBD;
+	usb_handle.index = U16(DEF_DEV_TYPE_HID,hid_type);
+	return app_gamepad_key_send(&usb_handle,keyp);
+}
+
+
 void user_vender_handler(void)
 {
     static timer_t timer;
-	timer_t report_interval = 1500;
+	static timer_t report_interval = 1500;
 
     //use test
 	if(m_task_tick10us - timer >= report_interval){
 		timer = m_task_tick10us;
 		
-		//gamepad
-		api_bt_ctb_t* bt_ctbp;
-		static app_gamepad_key_t key={0};
-		key.key ^= HW_KEY_A;
-		key.stick_l.x += 10000;
+		//gamepad key
+		app_gamepad_key_t key = m_gamepad_key;
 
-		bt_ctbp = api_bt_get_ctb(BT_EDR);
-		if(NULL != bt_ctbp->sta && BT_STA_READY == bt_ctbp->sta){
-			report_interval = bt_ctbp->inteval_10us;
-			bt_gamepad_key_send(BT_EDR, &key);
-		}else{
-			bt_ctbp = api_bt_get_ctb(BT_BLE);
-			if(NULL != bt_ctbp->sta && BT_STA_READY == bt_ctbp->sta){
-				report_interval = bt_ctbp->inteval_10us;
-				bt_gamepad_key_send(BT_BLE, &key);
+		//report
+		api_bt_ctb_t* edr_ctbp = api_bt_get_ctb(BT_EDR);
+		api_bt_ctb_t* ble_ctbp = api_bt_get_ctb(BT_BLE);
+		usbd_dev_t* pusb_dev = usbd_get_dev(0);
+		if(NULL != edr_ctbp->sta && BT_STA_CONN == edr_ctbp->sta){
+
+			if(edr_ctbp->vendor_ready){
+				report_interval = edr_ctbp->inteval_10us;
+				trp_handle_t bt_handle = {BT_EDR, BT_ID0, U16(DEV_TYPE_VENDOR,0)};
+				api_transport_tx(&bt_handle,&key,sizeof(key));
+			}else{
+				report_interval = edr_ctbp->inteval_10us;
+				bt_gamepad_key_send(BT_EDR, &key);
 			}
+		}else if(NULL != ble_ctbp->sta && BT_STA_CONN == ble_ctbp->sta){
+			report_interval = ble_ctbp->inteval_10us;
+			bt_gamepad_key_send(BT_BLE, &key);
+		#if API_USBD_BIT_ENABLE
+		}else if(NULL != pusb_dev && pusb_dev->ready){
+			report_interval = 800;
+			usb_gamepad_key_send(0,&key);
 		}
+		#endif
     }
 
 }

@@ -121,7 +121,7 @@ extern "C" {
 
 		// pwm			
         //motor：0,1    RGB:2,3,4
-        #define HW_PWM_MAP {\
+        // #define HW_PWM_MAP {\
             {PB_10, pwm_timer3, VAL2FLD(PWM_CH,pwm_ch3)},\
             {PB_09, pwm_timer3, VAL2FLD(PWM_CH,pwm_ch3 | PWM_CH_H)},\
             {PA_10, pwm_timer4, VAL2FLD(PWM_CH,pwm_ch4)| VAL2FLD(PWM_ACTIVE,1)},\
@@ -149,6 +149,11 @@ extern "C" {
             HW_KEY_SELECT,	HW_KEY_CAPTURE,	HW_KEY_START,0,				0,\
             HW_KEY_Y,		HW_KEY_X,       HW_KEY_A,	HW_KEY_B,		HW_KEY_L3\
         }
+
+
+		#define HW_STORAGE			\
+			uint8_t vendor;			\
+			uint8_t led_sta[5]
 		
 	#elif KMFC
 		// timer

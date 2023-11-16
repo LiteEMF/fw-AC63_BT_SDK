@@ -582,10 +582,14 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
             multi_ble_client_notify_handle = opt_hdl->value_handle;
             log_info("get read handle:0x%x\n", multi_ble_client_notify_handle);
             #ifdef LITEEMF_ENABLED
+            bt_evt_ready_t evt;
+            evt.bts = BT_UART;
+            evt.ready = true;
             if(m_trps & BT0_SUPPORT & BIT(BT_BLEC_RF)){
-                api_bt_event(BT_ID0,BT_BLEC_RF,BT_EVT_READY,NULL);    
+            evt.bts = BT_UART;
+                api_bt_event(BT_ID0,BT_BLEC_RF,BT_EVT_READY,&evt);    
             }else{
-                api_bt_event(BT_ID0,BT_BLEC,BT_EVT_READY,NULL);   
+                api_bt_event(BT_ID0,BT_BLEC,BT_EVT_READY,&evt);   
             }
             #endif
         }

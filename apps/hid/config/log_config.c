@@ -144,6 +144,12 @@ const char log_tag_const_d_COMM_EDR AT(.LOG_TAG_CONST) = 1;
 const char log_tag_const_w_COMM_EDR AT(.LOG_TAG_CONST) = 1;
 const char log_tag_const_e_COMM_EDR AT(.LOG_TAG_CONST) = 1;
 
+const char log_tag_const_v_SPP_TRANS AT(.LOG_TAG_CONST) = 0;
+const char log_tag_const_i_SPP_TRANS AT(.LOG_TAG_CONST) = 1;
+const char log_tag_const_d_SPP_TRANS AT(.LOG_TAG_CONST) = 1;
+const char log_tag_const_w_SPP_TRANS AT(.LOG_TAG_CONST) = 1;
+const char log_tag_const_e_SPP_TRANS AT(.LOG_TAG_CONST) = 1;
+
 const char log_tag_const_v_COMM_BLE AT(.LOG_TAG_CONST) = 0;
 const char log_tag_const_i_COMM_BLE AT(.LOG_TAG_CONST) = 1;
 const char log_tag_const_d_COMM_BLE AT(.LOG_TAG_CONST) = 1;

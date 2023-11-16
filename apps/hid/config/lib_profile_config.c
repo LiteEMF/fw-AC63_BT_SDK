@@ -252,6 +252,14 @@ SDP_RECORD_HANDLER_REGISTER(hid_sdp_record_item) = {
 };
 #endif
 
+#if (USER_SUPPORT_PROFILE_SPP==1)
+u8 spp_profile_support = 1;
+SDP_RECORD_HANDLER_REGISTER(spp_sdp_record_item) = {
+    .service_record = (u8 *)sdp_spp_service_data,
+    .service_record_handle = 0x00010004,
+};
+#endif
+
 #if (USER_SUPPORT_PROFILE_HFP==1)
 u8 hfp_profile_support = 1;
 SDP_RECORD_HANDLER_REGISTER(hfp_sdp_record_item) = {

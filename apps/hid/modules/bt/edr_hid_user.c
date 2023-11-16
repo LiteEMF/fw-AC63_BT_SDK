@@ -581,7 +581,7 @@ int edr_hid_data_send_ext(u8 report_type, u8 report_id, u8 *data, u16 len)
 
     bt_comm_edr_sniff_clean();
 
-    putchar('@');
+    // putchar('@');
     hid_data_info_t data_info;
     data_info.report_type = report_type;
     data_info.report_id = report_id;
