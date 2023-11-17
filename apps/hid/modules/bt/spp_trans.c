@@ -140,6 +140,15 @@ static void transport_spp_send_wakeup(void)
 static void transport_spp_recieve_cbk(void *priv, u8 *buf, u16 len)
 {
     spp_channel = (u16)priv;
+    
+    #ifdef LITEEMF_ENABLED
+    bt_evt_rx_t evt;
+    evt.bts = BT_UART;
+	evt.buf = buf;
+	evt.len = len;
+    if(len) api_bt_event(BT_ID0,BT_EDR,BT_EVT_RX,&evt);  
+    bt_comm_edr_sniff_clean();
+    #else
     log_info("spp_api_rx(%d) \n", len);
     log_info_hexdump(buf, len);
     /* clear_sniff_cnt(); */
@@ -158,6 +167,7 @@ static void transport_spp_recieve_cbk(void *priv, u8 *buf, u16 len)
         log_info("-loop send\n");
         transport_spp_send_data(buf, len);
     }
+    #endif
 }
 
 

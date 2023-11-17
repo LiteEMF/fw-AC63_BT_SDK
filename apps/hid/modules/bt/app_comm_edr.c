@@ -417,14 +417,16 @@ static int bt_comm_edr_status_event_handler(struct bt_event *bt)
         break;
 
     case BT_STATUS_SNIFF_STATE_UPDATE:
-        log_info(" BT_STATUS_SNIFF_STATE_UPDATE %d\n", bt->value);    //0退出SNIFF
+        log_info(" BT_STATUS_SNIFF_STATE_UPDATE %d\n", bt->value);    //0:acitve 1:sniff
         #ifdef LITEEMF_ENABLED
         bt_sniff_param_hook(bt->args, sniff_param_info->max_interval_slots + negotiation_sniff_interval_offset);
         if(!edr_sniff_by_remote)
         #endif
         {
             if (bt->value == 0) {           //sniff退出状态下需要从机重新进入sniff
-                sys_auto_sniff_controle(1, bt->args);
+                if(!USER_SUPPORT_PROFILE_SPP){
+                    sys_auto_sniff_controle(1, bt->args);
+                }
             } else {
                 sys_auto_sniff_controle(0, bt->args);
                 if (edr_hid_timer_handle) {

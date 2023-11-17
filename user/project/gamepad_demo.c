@@ -247,16 +247,20 @@ void user_vender_handler(void)
 		api_bt_ctb_t* ble_ctbp = api_bt_get_ctb(BT_BLE);
 		usbd_dev_t* pusb_dev = usbd_get_dev(0);
 		if(NULL != edr_ctbp->sta && BT_STA_CONN == edr_ctbp->sta){
-
 			if(edr_ctbp->vendor_ready){
 				report_interval = edr_ctbp->inteval_10us;
 				trp_handle_t bt_handle = {BT_EDR, BT_ID0, U16(DEV_TYPE_VENDOR,0)};
 				api_transport_tx(&bt_handle,&key,sizeof(key));
-			}else{
+			}else if(edr_ctbp->hid_ready){
 				report_interval = edr_ctbp->inteval_10us;
+				#if EDR_HID_SUPPORT & HID_GAMEPAD_MASK
 				bt_gamepad_key_send(BT_EDR, &key);
+				#else
+				trp_handle_t bt_handle = {BT_EDR, BT_ID0, U16(DEV_TYPE_HID,HID_TYPE_VENDOR)};
+				api_transport_tx(&bt_handle,&key,sizeof(key));
+				#endif
 			}
-		}else if(NULL != ble_ctbp->sta && BT_STA_CONN == ble_ctbp->sta){
+		}else if(NULL != ble_ctbp->sta && ble_ctbp->hid_ready){
 			report_interval = ble_ctbp->inteval_10us;
 			bt_gamepad_key_send(BT_BLE, &key);
 		#if API_USBD_BIT_ENABLE

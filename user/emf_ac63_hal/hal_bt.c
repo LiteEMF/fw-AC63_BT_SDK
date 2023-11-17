@@ -200,7 +200,7 @@ bool hal_bt_select_mode(uint8_t id,uint16_t trps)
 }
 
 
-//BLE 从机接收数据
+//BLE 私有协议从机接收数据
 void ble_hid_transfer_channel_recieve(uint8_t* p_attrib_value,uint16_t length)
 {
     bt_evt_rx_t evt;
@@ -260,9 +260,16 @@ void ble_status_callback(ble_state_e status, u8 reason)
         break;
     case BLE_ST_NOTIFY_IDICATE:{
         bt_evt_ready_t evt;
-        evt.bts = BT_UART;
-        evt.ready = true;
-        api_bt_event(BT_ID0,bt,BT_EVT_READY,&evt);
+        if(is_ble_notify_open(false)){
+            evt.bts = BT_UART;
+            evt.ready = true;
+            api_bt_event(BT_ID0,bt,BT_EVT_READY,&evt);
+        }
+        if(is_ble_notify_open(true)){
+            evt.bts = BT_HID;
+            evt.ready = true;
+            api_bt_event(BT_ID0,bt,BT_EVT_READY,&evt);
+        }
         break;
     }
     case BLE_PRIV_PAIR_ENCRYPTION_CHANGE:               //ble 2.4g切换保存当前配对信息
@@ -310,7 +317,11 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
     #if BT0_SUPPORT & BIT_ENUM(TR_EDR)
     case BT_STATUS_SECOND_CONNECTED:
     case BT_STATUS_FIRST_CONNECTED:
+        bt_evt_ready_t evt;
+        evt.bts = BT_HID;
+        evt.ready = true;
         api_bt_event(BT_ID0,BT_EDR,BT_EVT_CONNECTED,NULL);
+        api_bt_event(BT_ID0,BT_EDR,BT_EVT_READY,&evt);
         break;
     case BT_STATUS_FIRST_DISCONNECT:
     case BT_STATUS_SECOND_DISCONNECT:
@@ -507,7 +518,12 @@ bool hal_bt_disconnect(uint8_t id, bt_t bt)
     #endif
     #if BT0_SUPPORT & BIT_ENUM(TR_EDR)
     case BT_EDR: 	
+        #if USER_SUPPORT_PROFILE_HID
         user_hid_disconnect();    
+        #endif
+        #if USER_SUPPORT_PROFILE_SPP
+        transport_spp_disconnect();
+        #endif
         break;
     #endif
     #if BT0_SUPPORT & BIT_ENUM(TR_EDRC)
@@ -596,8 +612,10 @@ bool hal_bt_uart_tx(uint8_t id, bt_t bt,uint8_t *buf, uint16_t len)
         break;
     #endif
     #if (BT0_SUPPORT & BIT_ENUM(TR_EDR)) && (EDR_TYPE_SUPPORT & BIT_ENUM(DEV_TYPE_VENDOR))
-    case BT_EDR: 	
-	    return (0 == transport_spp_send_data(buf, len));
+    case BT_EDR: 
+        if (transport_spp_send_data_check(0)) {
+            return (0 == transport_spp_send_data(buf, len));
+        }
         break;
     #endif
     #if BT0_SUPPORT & BIT_ENUM(TR_EDRC)

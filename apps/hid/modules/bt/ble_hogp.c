@@ -1487,32 +1487,34 @@ bool multi_server_is_bonded(void)
     return hogp_pair_info.pair_flag;
 }
 
-bool is_ble_notify_open(void)
+bool is_ble_notify_open(bool hid_cc_cfg)
 {
-    #if defined BLE_HID_SUPPORT && BLE_HID_SUPPORT           //如果带HID,只判断HID,android 不支持多HID服务
-    if(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE == ble_gatt_server_characteristic_ccc_get(hogp_con_handle, ATT_CHARACTERISTIC_2a4d_01_CLIENT_CONFIGURATION_HANDLE)){
-        return false;
+    if(hid_cc_cfg){
+        #if defined BLE_HID_SUPPORT && BLE_HID_SUPPORT           //如果带HID,只判断HID,android不支持多HID服务
+        if(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE == ble_gatt_server_characteristic_ccc_get(hogp_con_handle, ATT_CHARACTERISTIC_2a4d_01_CLIENT_CONFIGURATION_HANDLE)){
+            return false;
+        }
+        if(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE == ble_gatt_server_characteristic_ccc_get(hogp_con_handle, ATT_CHARACTERISTIC_2a4d_02_CLIENT_CONFIGURATION_HANDLE)){
+            return false;
+        }
+        if(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE == ble_gatt_server_characteristic_ccc_get(hogp_con_handle, ATT_CHARACTERISTIC_2a4d_04_CLIENT_CONFIGURATION_HANDLE)){
+            return false;
+        }
+        if(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE == ble_gatt_server_characteristic_ccc_get(hogp_con_handle, ATT_CHARACTERISTIC_2a4d_05_CLIENT_CONFIGURATION_HANDLE)){
+            return false;
+        }
+        if(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE == ble_gatt_server_characteristic_ccc_get(hogp_con_handle, ATT_CHARACTERISTIC_2a4d_06_CLIENT_CONFIGURATION_HANDLE)){
+            return false;
+        }
+        if(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE == ble_gatt_server_characteristic_ccc_get(hogp_con_handle, ATT_CHARACTERISTIC_2a4d_07_CLIENT_CONFIGURATION_HANDLE)){
+            return false;
+        }
+        #endif
+    }else{
+        if(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE == ble_gatt_server_characteristic_ccc_get(hogp_con_handle, ATT_CHARACTERISTIC_ae42_01_CLIENT_CONFIGURATION_HANDLE)){
+            return false;
+        }
     }
-    if(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE == ble_gatt_server_characteristic_ccc_get(hogp_con_handle, ATT_CHARACTERISTIC_2a4d_02_CLIENT_CONFIGURATION_HANDLE)){
-        return false;
-    }
-    if(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE == ble_gatt_server_characteristic_ccc_get(hogp_con_handle, ATT_CHARACTERISTIC_2a4d_04_CLIENT_CONFIGURATION_HANDLE)){
-        return false;
-    }
-    if(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE == ble_gatt_server_characteristic_ccc_get(hogp_con_handle, ATT_CHARACTERISTIC_2a4d_05_CLIENT_CONFIGURATION_HANDLE)){
-        return false;
-    }
-    if(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE == ble_gatt_server_characteristic_ccc_get(hogp_con_handle, ATT_CHARACTERISTIC_2a4d_06_CLIENT_CONFIGURATION_HANDLE)){
-        return false;
-    }
-    if(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE == ble_gatt_server_characteristic_ccc_get(hogp_con_handle, ATT_CHARACTERISTIC_2a4d_07_CLIENT_CONFIGURATION_HANDLE)){
-        return false;
-    }
-    #else                               //如果不带HID判断数据通道
-    if(GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE == ble_gatt_server_characteristic_ccc_get(hogp_con_handle, ATT_CHARACTERISTIC_ae42_01_CLIENT_CONFIGURATION_HANDLE)){
-        return false;
-    }
-    #endif
     return true;
 }
 #endif

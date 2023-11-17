@@ -210,7 +210,7 @@ void user_vender_handler(void)
 			bt_ctbp = api_bt_get_ctb(BT_BLE);
 			bt_handle.trp = TR_BLE;
 			bt_handle.index = U16(DEV_TYPE_HID,DEF_HID_TYPE_KB);
-			if(bt_ctbp->sta == BT_STA_CONN){
+			if(bt_ctbp->hid_ready){
 				api_transport_tx(&bt_handle,&kb,sizeof(kb));
 			}
 			#endif
@@ -219,7 +219,7 @@ void user_vender_handler(void)
 			bt_ctbp = api_bt_get_ctb(BT_EDR);
 			bt_handle.trp = TR_EDR;
 			bt_handle.index = U16(DEV_TYPE_HID,DEF_HID_TYPE_KB);
-			if(bt_ctbp->sta == BT_STA_CONN){
+			if(bt_ctbp->hid_ready){
 				api_transport_tx(&bt_handle,&kb,sizeof(kb));
 			}
 			#endif
@@ -248,7 +248,7 @@ void user_vender_handler(void)
 			bt_ctbp = api_bt_get_ctb(BT_BLE);
 			bt_handle.trp = TR_BLE;
 			bt_handle.index = U16(DEV_TYPE_HID,HID_TYPE_MOUSE);
-			if(bt_ctbp->sta == BT_STA_CONN){
+			if(bt_ctbp->hid_ready){
 				api_transport_tx(&bt_handle,&mouse,sizeof(mouse));
 			}
 			#endif
@@ -257,7 +257,7 @@ void user_vender_handler(void)
 			bt_ctbp = api_bt_get_ctb(BT_EDR);
 			bt_handle.trp = TR_EDR;
 			bt_handle.index = U16(DEV_TYPE_HID,HID_TYPE_MOUSE);
-			if(bt_ctbp->sta == BT_STA_CONN){
+			if(bt_ctbp->hid_ready){
 				api_transport_tx(&bt_handle,&mouse,sizeof(mouse));
 			}
 			#endif
@@ -285,7 +285,7 @@ void user_vender_handler(void)
 			hid_type = app_gamepad_get_hidtype(bt_ctbp->hid_types);
 			bt_handle.trp = TR_BLE;
 			bt_handle.index = U16(DEV_TYPE_HID,hid_type);
-			if(bt_ctbp->sta == BT_STA_CONN){
+			if(bt_ctbp->hid_ready){
 				app_gamepad_key_send(&bt_handle,&key);
 			}
 			#endif
@@ -295,7 +295,7 @@ void user_vender_handler(void)
 			hid_type = app_gamepad_get_hidtype(bt_ctbp->hid_types);
 			bt_handle.trp = TR_EDR;
 			bt_handle.index = U16(DEV_TYPE_HID,hid_type);
-			if(bt_ctbp->sta == BT_STA_CONN){
+			if(bt_ctbp->hid_ready){
 				app_gamepad_key_send(&bt_handle,&key);
 			}
 			#endif
