@@ -62,7 +62,7 @@ extern "C" {
 		#define BLE_TYPE_SUPPORT					(BIT_ENUM(DEV_TYPE_VENDOR))
 
 		#define DEV_TRPS_DEFAULT					(BIT(TR_BLE)|BIT(TR_USBD))
-		#define SW_VERSION                  		0x01
+		#define SW_VERSION                  		0x0100
         #define DEFAULT_NAME			    		"hellow_keyboard"
         #define DEFAULT_MODEL						"HELKB"
 
@@ -119,7 +119,7 @@ extern "C" {
 		#define BTC_SEARCH_NOTIFY_CHARA_UUID16		0xae01
 
 		#define DEV_TRPS_DEFAULT					BT0_SUPPORT
-		#define SW_VERSION                     		0x01
+		#define SW_VERSION                     		0x0100
         #define DEFAULT_NAME			       		"gamepad"
         #define DEFAULT_MODEL						"GP_dev"
 	#elif GAMEPAD_DEMO	
@@ -131,6 +131,7 @@ extern "C" {
 		#define TCFG_LOWPOWER_LOWPOWER_SEL	0		/*关闭修改防止定时器不准确*/
 		#define APP_RGB_ENABLE				1
 		#define APP_RGB_NUMS				1
+		#define APP_RUMBLE_ENABLE			1
 
 		#define APP_JOYSTICK_ENABLE			1
 		#define STICK_CAL_DEADZONE          10       //中心死区百分百
@@ -145,13 +146,13 @@ extern "C" {
 		#define USBD_HID_SUPPORT			(BIT_ENUM(HID_TYPE_X360))
 
 		//bt 
-		#define BT0_SUPPORT					(BIT_ENUM(TR_BLE) | BIT_ENUM(TR_EDR))
+		#define BT0_SUPPORT					(BIT_ENUM(TR_EDR))
 		// #define EDR_TYPE_SUPPORT			(BIT_ENUM(DEV_TYPE_HID) | BIT_ENUM(DEV_TYPE_VENDOR))
 		// #define EDR_HID_SUPPORT				BIT_ENUM(HID_TYPE_XBOX)
 		#define EDR_TYPE_SUPPORT			(BIT_ENUM(DEV_TYPE_HID))
 		#define EDR_HID_SUPPORT				BIT_ENUM(HID_TYPE_VENDOR)
-		#define BLE_TYPE_SUPPORT			(BIT_ENUM(DEV_TYPE_HID) | BIT_ENUM(DEV_TYPE_VENDOR))
-		#define BLE_HID_SUPPORT				BIT_ENUM(HID_TYPE_XBOX)
+		// #define BLE_TYPE_SUPPORT			(BIT_ENUM(DEV_TYPE_HID) | BIT_ENUM(DEV_TYPE_VENDOR))
+		// #define BLE_HID_SUPPORT			BIT_ENUM(HID_TYPE_XBOX)
 		#define EDR_ICON					BD_CLASS_GAMEPAD
 
 
@@ -159,7 +160,7 @@ extern "C" {
 		#define CONNECTED_SLEEP_TIME    	(15*1000*60UL)
 
 		#define DEV_TRPS_DEFAULT					BT0_SUPPORT
-		#define SW_VERSION                     		0x01
+		#define SW_VERSION                     		0x0100
         #define DEFAULT_NAME			       		"gamepad_demo"
         #define DEFAULT_MODEL						"GP_demo"
 	
@@ -189,7 +190,7 @@ extern "C" {
 		#define BLE_TYPE_SUPPORT					(BIT_ENUM(DEV_TYPE_VENDOR))
 
 		#define DEV_TRPS_DEFAULT					(BIT(TR_BLE)|BIT(TR_USBD))
-		#define SW_VERSION                  		0x01
+		#define SW_VERSION                  		0x0100
         #define DEFAULT_NAME			    		"km_for_consoles"
         #define DEFAULT_MODEL						"KMFC"
 	#elif KMFCS
@@ -215,7 +216,7 @@ extern "C" {
 		#define BLE_TYPE_SUPPORT					(BIT_ENUM(DEV_TYPE_VENDOR))
 
 		#define DEV_TRPS_DEFAULT					(BIT(TR_BLE)|BIT(TR_USBD))
-		#define SW_VERSION                  		0x01
+		#define SW_VERSION                  		0x0100
         #define DEFAULT_NAME			    		"km_for_consoless"
         #define DEFAULT_MODEL						"KMFCS"
 	#endif

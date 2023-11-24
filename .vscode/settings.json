@@ -132,7 +132,26 @@
 		"usbh_class.h": "c",
 		"usbh_hid.h": "c",
 		"usbd_hid.h": "c",
-		"emf_utils.h": "c"
+		"emf_utils.h": "c",
+		"hid_typedef.h": "c",
+		"usbh_hid_gamepad.h": "c",
+		"xbox_typedef.h": "c",
+		"switch_typedef.h": "c",
+		"usbd_hid_ps3.h": "c",
+		"usbd_hid_ps.h": "c",
+		"api_pwm.h": "c",
+		"pinmap.h": "c",
+		"io_key.h": "c",
+		"hal_gpio.h": "c",
+		"api_adc.h": "c",
+		"hal_adc.h": "c",
+		"hal_tick.h": "c",
+		"hal_pwm.h": "c",
+		"mcpwm.h": "c",
+		"app_joystick.h": "c",
+		"api_pm.h": "c",
+		"api_storage.h": "c",
+		"spp_trans.h": "c"
 	},
 	"cmake.sourceDirectory": "D:/work/git/github/fw-AC63_BT_SDK/user/LiteEMF/api/gps"
 }

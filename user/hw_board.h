@@ -74,9 +74,9 @@ extern "C" {
 
 		// pwm			
 		// #define HW_PWM_MAP {	\
-			{PA_01,   pwm_timer0,   (PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch0|PWM_CH_H)|VAL2FLD(PWM_ACTIVE,1)},\
-			{PB_00,   pwm_timer1,   (PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch1),VAL2FLD(PWM_ACTIVE,1)},\
-			{PB_02,   pwm_timer1,   (PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch1|PWM_CH_H)},\
+			{PA_01,   pwm_timer0,   (PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch0) | VAL2FLD(PWM_HL, 1) |VAL2FLD(PWM_ACTIVE,1)},\
+			{PB_00,   pwm_timer1,   (PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch1)|VAL2FLD(PWM_ACTIVE,1)},\
+			{PB_02,   pwm_timer1,   (PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch1) | VAL2FLD(PWM_HL, 1) },\
 			{PB_06,   pwm_timer2,   (PWM_FREQ,10000)|VAL2FLD(PWM_CH,pwm_ch2),VAL2FLD(PWM_ACTIVE,1)},\
 			}
 	#elif GAMEPAD_DEMO
@@ -121,12 +121,12 @@ extern "C" {
 
 		// pwm			
         //motor：0,1    RGB:2,3,4
-        // #define HW_PWM_MAP {\
+        #define HW_PWM_MAP {\
             {PB_10, pwm_timer3, VAL2FLD(PWM_CH,pwm_ch3)},\
-            {PB_09, pwm_timer3, VAL2FLD(PWM_CH,pwm_ch3 | PWM_CH_H)},\
+            {PB_09, pwm_timer3, VAL2FLD(PWM_CH,pwm_ch3)| VAL2FLD(PWM_HL,1)},\
             {PA_10, pwm_timer4, VAL2FLD(PWM_CH,pwm_ch4)| VAL2FLD(PWM_ACTIVE,1)},\
-            {PA_00, pwm_timer0, VAL2FLD(PWM_CH,pwm_ch0 | PWM_CH_H) | VAL2FLD(PWM_ACTIVE,1)},\
-            {PB_00, pwm_timer1, VAL2FLD(PWM_CH,pwm_ch1 | PWM_CH_H) | VAL2FLD(PWM_ACTIVE,1)},\
+            {PA_00, pwm_timer0, VAL2FLD(PWM_CH,pwm_ch0)| VAL2FLD(PWM_HL,1) | VAL2FLD(PWM_ACTIVE,1)},\
+            {PB_00, pwm_timer1, VAL2FLD(PWM_CH,pwm_ch1)| VAL2FLD(PWM_HL,1) | VAL2FLD(PWM_ACTIVE,1)},\
 		}
 
 		#define JOYSTICK_VCC_GPIO			PC_03
