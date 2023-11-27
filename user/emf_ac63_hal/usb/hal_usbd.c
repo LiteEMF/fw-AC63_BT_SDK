@@ -42,9 +42,10 @@
 **	static Parameters
 *******************************************************************************************************/
 mem_buf_t usbd_mem_buf;
-uint8_t usbd_ep_buf[0x200]  __attribute__((aligned(8)));
+uint8_t usbd_ep_buf[0x200]  SEC(.usb_msd_dma) __attribute__((aligned(8)));
 static struct usb_ep_addr_t usb_ep_addr  SEC(.usb_config_var);
-static uint8_t ep0_dma_buffer[USBD_ENDP0_MTU + 4] __attribute__((aligned(4))) SEC(.usb_h_dma);
+static uint8_t ep0_dma_buffer[USBD_ENDP0_MTU + 8] __attribute__((aligned(4))) SEC(.usb_ep0);
+
 static uint8_t* m_ep_pbuffer[USBD_ENDP_NUM][2];
 static uint8_t* bulk_ep_pbuffer;        //优化内存用
 

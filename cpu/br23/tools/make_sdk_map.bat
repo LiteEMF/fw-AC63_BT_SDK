@@ -1,0 +1,1 @@
+C:\JL\pi32\bin\llvm-objsizedump.exe -lite -skip-zero -enable-dbg-info .\sdk.elf > sdk.map
