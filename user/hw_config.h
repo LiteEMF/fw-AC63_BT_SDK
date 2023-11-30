@@ -145,6 +145,9 @@ extern "C" {
 		#define USBD_TYPE_SUPPORT			(BIT_ENUM(DEV_TYPE_HID))
 		#define USBD_HID_SUPPORT			(BIT_ENUM(HID_TYPE_X360))
 
+		//Gsensor
+		#define IMU_ICM42688_ID				1
+
 		//bt 
 		#define BT0_SUPPORT					(BIT_ENUM(TR_EDR))
 		// #define EDR_TYPE_SUPPORT			(BIT_ENUM(DEV_TYPE_HID) | BIT_ENUM(DEV_TYPE_VENDOR))
