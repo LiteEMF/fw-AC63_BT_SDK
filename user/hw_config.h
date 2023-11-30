@@ -132,18 +132,21 @@ extern "C" {
 		#define APP_RGB_ENABLE				1
 		#define APP_RGB_NUMS				1
 		#define APP_RUMBLE_ENABLE			1
+		#define APP_GAMEAPD_ENABLE			1
 
 		#define APP_JOYSTICK_ENABLE			1
-		#define STICK_CAL_DEADZONE          10       //中心死区百分百
-		#define TRIGGER_CAL_DEADZONE		5      //中心死区百分百
+		#define STICK_CAL_SIDE_DEADZONE		6
+		#define TRIGGER_CAL_DEADZONE		5      	//中心死区百分百
 		#define APP_STICK_ACTIVE 			{{true, false},{true, false}}
 		#define APP_TRIGGER_ACTIVE 			{false, false}
 		#define TRIGGER_LIMIT_MIN_R 		350
 
+		#define STICK_CAL_DEFAULT_R			240
+		#define TRIGGER_CAL_DEFAULT_R   	400
 
 		#define API_USBD_BIT_ENABLE			BIT(0)
 		#define USBD_TYPE_SUPPORT			(BIT_ENUM(DEV_TYPE_HID))
-		#define USBD_HID_SUPPORT			(BIT_ENUM(HID_TYPE_X360))
+		#define USBD_HID_SUPPORT			(BIT_ENUM(HID_TYPE_X360) | BIT_ENUM(HID_TYPE_VENDOR))
 
 		//Gsensor
 		#define IMU_ICM42688_ID				1
@@ -163,7 +166,7 @@ extern "C" {
 		#define CONNECTED_SLEEP_TIME    	(15*1000*60UL)
 
 		#define DEV_TRPS_DEFAULT					BT0_SUPPORT
-		#define SW_VERSION                     		0x0100
+		#define SW_VERSION                     		0x0200
         #define DEFAULT_NAME			       		"gamepad_demo"
         #define DEFAULT_MODEL						"GP_demo"
 	

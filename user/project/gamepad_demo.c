@@ -77,18 +77,24 @@ void api_bt_rx(uint8_t id,bt_t bt, bt_evt_rx_t* pa)
 
 	bt_ctbp = api_bt_get_ctb(bt);
 	if(NULL == bt_ctbp) return;
-	#if APP_GAMEAPD_ENABLE
+
+	#define EDR_HID_SUPPORT				BIT_ENUM(HID_TYPE_VENDOR)
+
 	if(BT_HID & pa->bts){
+	#if EDR_HID_SUPPORT & HID_GAMEPAD_MASK
 		hid_type_t hid_type = app_gamepad_get_hidtype(bt_ctbp->hid_types);
 		trp_handle_t handle = {bt,id,U16(DEV_TYPE_HID,hid_type)};
 
 		app_gamepad_dev_process(&handle, pa->buf, pa->len);
+	#else
+		trp_handle_t handle = {bt,id,U16(DEV_TYPE_HID, HID_TYPE_VENDOR)};
+		app_command_rx(&handle,pa->buf, pa->len);
+	#endif
+
 	}else if(BT_UART == pa->bts){					//uart
-		uint8_t i;
 		trp_handle_t handle = {bt,id,U16(DEV_TYPE_VENDOR, 0)};
 		app_command_rx(&handle,pa->buf, pa->len);
 	}
-	#endif
 }
 #endif
 
@@ -182,8 +188,8 @@ void user_vender_init(void)
     uint8_t i;
     logd("call user_vender_init ok\n" );
 	
-	app_rumble_set_duty(0, 250, 10000);
-	app_rumble_set_duty(1, 250, 20000);
+	app_rumble_set_duty(0, 250, 1000);
+	app_rumble_set_duty(1, 250, 2000);
 	#if APP_RGB_ENABLE
     for(i=0; i<APP_RGB_NUMS; i++){
         app_rgb_set_blink(i, Color_White, BLINK_SLOW);
@@ -236,6 +242,14 @@ void user_vender_handler(void)
 		//gamepad key
 		app_gamepad_key_t key = m_gamepad_key;
 
+		//改建,连点,宏定义,摇杆
+		joystick_cfg_t tick_cfg = {0, 0, 10, 3};
+		joystick_cfg_t trigger_cfg = {0, 0, 5, 5};
+		app_stick_deadzone(&tick_cfg, &key.stick_l);
+		app_stick_deadzone(&tick_cfg, &key.stick_r);
+		app_trigger_deadzone(&trigger_cfg, &key.l2);
+		app_trigger_deadzone(&trigger_cfg, &key.r2);
+
 		//report
 		api_bt_ctb_t* edr_ctbp = api_bt_get_ctb(BT_EDR);
 		api_bt_ctb_t* ble_ctbp = api_bt_get_ctb(BT_BLE);
@@ -255,11 +269,11 @@ void user_vender_handler(void)
 				api_command_tx(&bt_handle,CMD_GAMEPAD_KEY,&key,sizeof(key));
 				#endif
 			}
-		}else if(NULL != ble_ctbp->sta && ble_ctbp->hid_ready){
+		}else if((NULL != ble_ctbp) && ble_ctbp->hid_ready){
 			report_interval = ble_ctbp->inteval_10us;
 			bt_gamepad_key_send(BT_BLE, &key);
 		#if API_USBD_BIT_ENABLE
-		}else if(NULL != pusb_dev && pusb_dev->ready){
+		}else if((NULL != pusb_dev) && (pusb_dev->ready)){
 			report_interval = 800;
 			usb_gamepad_key_send(0,&key);
 		}

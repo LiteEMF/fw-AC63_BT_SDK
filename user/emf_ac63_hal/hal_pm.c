@@ -45,7 +45,7 @@ extern void chip_reboot_entry_uboot_uart_upgrade_mode();
 void hal_boot(uint8_t index)
 {
 	if(2 == index){
-		chip_reboot_entry_uboot_uart_upgrade_mode();
+		// chip_reboot_entry_uboot_uart_upgrade_mode();			//TODO build err
 	}else{
 		go_mask_usb_updata();
 	}
