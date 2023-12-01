@@ -72,8 +72,8 @@ extern "C" {
 
 #elif PROJECT_GAMEPAD
 	#define GAMEPAD1					0				//测试工程
-	#define GAMEPAD_DEMO				1				//实际一个gamepad demo例程
-	#define KMFC						0
+	#define GAMEPAD_DEMO				0				//实际一个gamepad demo例程
+	#define KMFC						1
 	#define KMFCS						0
 
 
@@ -137,7 +137,7 @@ extern "C" {
 		#define APP_JOYSTICK_ENABLE			1
 		#define STICK_CAL_SIDE_DEADZONE		6
 		#define TRIGGER_CAL_DEADZONE		5      	//中心死区百分百
-		#define APP_STICK_ACTIVE 			{{true, false},{true, false}}
+		#define APP_STICK_ACTIVE 			{{true, true},{true, true}}
 		#define APP_TRIGGER_ACTIVE 			{false, false}
 		#define TRIGGER_LIMIT_MIN_R 		350
 
@@ -146,7 +146,7 @@ extern "C" {
 
 		#define API_USBD_BIT_ENABLE			BIT(0)
 		#define USBD_TYPE_SUPPORT			(BIT_ENUM(DEV_TYPE_HID))
-		#define USBD_HID_SUPPORT			(BIT_ENUM(HID_TYPE_X360) | BIT_ENUM(HID_TYPE_VENDOR))
+		#define USBD_HID_SUPPORT			(BIT_ENUM(HID_TYPE_SWITCH))
 
 		//Gsensor
 		#define IMU_ICM42688_ID				1

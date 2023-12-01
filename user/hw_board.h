@@ -120,7 +120,7 @@ extern "C" {
 			}
 
 		// pwm			
-        //motor：0,1    RGB:2,3,4
+        //rumble：0,1    RGB:2,3,4
         #define HW_PWM_MAP {\
             {PB_10, pwm_timer3, VAL2FLD(PWM_CH,pwm_ch3)},\
             {PB_09, pwm_timer3, VAL2FLD(PWM_CH,pwm_ch3)| VAL2FLD(PWM_HL,1)},\

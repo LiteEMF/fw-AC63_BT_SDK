@@ -188,8 +188,8 @@ void user_vender_init(void)
     uint8_t i;
     logd("call user_vender_init ok\n" );
 	
-	app_rumble_set_duty(0, 250, 1000);
-	app_rumble_set_duty(1, 250, 2000);
+	app_rumble_set_duty(0, 250, 500);
+	app_rumble_set_duty(1, 250, 500);
 	#if APP_RGB_ENABLE
     for(i=0; i<APP_RGB_NUMS; i++){
         app_rgb_set_blink(i, Color_White, BLINK_SLOW);
@@ -249,7 +249,7 @@ void user_vender_handler(void)
 		app_stick_deadzone(&tick_cfg, &key.stick_r);
 		app_trigger_deadzone(&trigger_cfg, &key.l2);
 		app_trigger_deadzone(&trigger_cfg, &key.r2);
-
+		// logd("k:%x %d %d %d %d\n",key.key,  m_gamepad_key.l2,m_gamepad_key.r2,key.l2,key.r2  );
 		//report
 		api_bt_ctb_t* edr_ctbp = api_bt_get_ctb(BT_EDR);
 		api_bt_ctb_t* ble_ctbp = api_bt_get_ctb(BT_BLE);

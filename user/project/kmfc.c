@@ -228,10 +228,62 @@ void user_vender_handler(void)
 		usbd_dev_t* pdev = usbd_get_dev(0);
 		trp_handle_t usb_handle = {TR_USBD, 0, 0}; 
 		hid_type_t hid_type = app_gamepad_get_hidtype(m_usbd_hid_types[0]);
+
 		usb_handle.index = U16(DEF_DEV_TYPE_HID,hid_type);
 		if(pdev->ready){
 			app_gamepad_key_send(&usb_handle,&usbh_gamepad_key);
 		}
+
+
+		#if 1			//switch 马达测试
+		const switch_rumble_t rumble_test_table[][10]= {
+			{0x10, 0x00, 0X79,0XAC,0X31,0X80,	0X79,0XAC,0X31,0X80},
+			{0x10, 0x00, 0X7B,0XFD,0X82,0X80,	0X7B,0XFD,0X82,0X80},
+			{0x10, 0x00, 0X7F,0X0D,0X3E,0X82,	0X7F,0X0D,0X3E,0X82},
+			{0x10, 0x00, 0X6D,0X32,0X43,0X83,	0X6D,0X32,0X43,0X83},
+			{0x10, 0x00, 0X6D,0X11,0XBE,0X83,	0X6D,0X11,0XBE,0X83},
+			{0x10, 0x00, 0X6D,0XF1,0X41,0X83,	0X6D,0XF1,0X41,0X83},
+			{0x10, 0x00, 0X8C,0X2D,0X4F,0X80,	0X8C,0X2D,0X4F,0X80},
+			{0x10, 0x00, 0X77,0XEC,0XC1,0X83,	0X77,0XEC,0XC1,0X83},//off
+			{0x10, 0x00, 0X6D,0XAD,0XDD,0X82,	0X6D,0XAD,0XDD,0X82},
+			{0x10, 0x00, 0X6D,0X12,0X64,0X82,	0X6D,0X12,0X64,0X82},
+			{0x10, 0x00, 0X6D,0XE9,0X64,0X82,	0X6D,0XE9,0X64,0X82},
+			{0x10, 0x00, 0X71,0XFD,0XA7,0X8B,	0X71,0XFD,0XA7,0X8B},
+			{0x10, 0x00, 0x64,0x00,0x64,0x80, 	0x64,0x00,0x64,0x80},
+			{0x10, 0x00, 0x06,0x80,0xE5,0x40, 	0x06,0x80,0xE5,0x40},
+			{0x10, 0x00, 0x80,0x8C,0x61,0x80, 	0x80,0x8C,0x61,0x80},
+			{0x10, 0x00, 0x06,0x20,0x33,0x60, 	0x06,0x20,0x33,0x60},
+		};
+		static bool evt_key = false;
+		static uint8_t rumble_index=0;
+		static uint8_t index = 0;
+		switch_rumble_t rumble;
+		
+		if((usbh_gamepad_key.key & HW_KEY_L1) && (usbh_gamepad_key.key &  HW_KEY_R1)){
+			if(!evt_key){
+				evt_key = true;
+
+				memcpy(&rumble, rumble_test_table[index], sizeof(rumble));
+				logd_r("rumble index:%d",index);dumpd((uint8_t*)&rumble,sizeof(rumble));
+				switch_rumble_decode(&rumble.rumble_l);
+				
+				index++; 
+				if(index > countof(rumble_test_table)) index = 0;
+			}
+
+			trp_handle_t usbh_handle = {TR_USBH, 0 ,U16(DEF_DEV_TYPE_HID,usbh_gamepad_type)};
+			usbh_handle.id = usbh_class_find_by_type_all(DEF_DEV_TYPE_HID,usbh_gamepad_type,NULL);
+			
+			if(USBH_NULL != usbh_handle.id){
+				memcpy(&rumble, rumble_test_table[index], sizeof(rumble));
+				rumble.index=rumble_index++;
+				api_transport_tx(&usbh_handle,(uint8_t*)&rumble,sizeof(rumble));
+			}
+		}else{
+			evt_key = false;
+		}	
+
+		#endif
 	}
 	#else
 	if(m_task_tick10us - timer >= 100){
