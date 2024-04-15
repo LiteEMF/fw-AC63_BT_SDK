@@ -1121,7 +1121,7 @@ int ble_comm_att_send_data(u16 conn_handle, u16 att_handle, u8 *data, u16 len, a
         }
 
         log_error("att_send_fail: %d!!!,%s", ret, err_string);
-        log_error("param:%04x, %04x, %02x,len= %d", conn_handle, att_handle, op_type, len);
+        // log_error("param:%04x, %04x, %02x,len= %d", conn_handle, att_handle, op_type, len);
         /* put_buf(data,len); */
     }
     return ret;

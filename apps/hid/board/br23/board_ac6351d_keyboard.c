@@ -307,12 +307,20 @@ struct port_wakeup port7 = {
 
 
 //-----------------------------------------------
-#if defined KEY_USB_DET_GPIO              //适配外部充电
+#if defined KEY_USB_DET_GPIO && (PIN_NULL != KEY_USB_DET_GPIO)              //适配外部充电
 static struct port_wakeup usbdet_port = {
 	.pullup_down_enable = DISABLE,                            //配置I/O 内部上下拉是否使能
 	.edge               = RISING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
 	.attribute          = BLUETOOTH_RESUME,                  //保留参数
 	.iomap              = KEY_USB_DET_GPIO,                                 //唤醒口选择
+    .filter_enable      = ENABLE,
+};
+#elif defined KEY_CHARGER_GPIO && (PIN_NULL != KEY_CHARGER_GPIO)
+static struct port_wakeup chargedet_port = {
+	.pullup_down_enable = ENABLE,                            //配置I/O 内部上下拉是否使能
+	.edge               = FALLING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
+	.attribute          = BLUETOOTH_RESUME,                  //保留参数
+	.iomap              = KEY_CHARGER_GPIO,                                 //唤醒口选择
     .filter_enable      = ENABLE,
 };
 #endif
@@ -333,6 +341,8 @@ const struct wakeup_param wk_param = {
     #endif
     #if defined KEY_USB_DET_GPIO && (PIN_NULL != KEY_USB_DET_GPIO)
     .port[2] = &usbdet_port,
+    #elif defined KEY_CHARGER_GPIO && (PIN_NULL != KEY_CHARGER_GPIO)
+    .port[2] = &chargedet_port,
     #endif
 
     #else

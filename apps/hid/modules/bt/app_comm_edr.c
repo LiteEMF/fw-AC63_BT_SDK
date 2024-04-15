@@ -46,7 +46,7 @@
 #include "debug.h"
 
 
-#if (!TCFG_USER_EDR_ENABLE) && (USER_SUPPORT_PROFILE_HID || USER_SUPPORT_PROFILE_HFP)
+#if (!TCFG_USER_EDR_ENABLE) && (USER_SUPPORT_PROFILE_HID || USER_SUPPORT_PROFILE_SPP || USER_SUPPORT_PROFILE_HFP)
 //配置需要一致
 #error "need disable USER_SUPPORT_PROFILE_XXX!!!!!!"
 #endif
@@ -103,6 +103,8 @@ void __attribute__((weak)) sniff_negotiation_hook(u16 *T_sniff, u16 *attemp, u16
     static u8 negotiation_count;
     if (sniff_param_info->sniff_mode == SNIFF_MODE_ANCHOR) {
         //库提供的negotiation变量的值是 1~3~1~3 循环
+
+        log_error("sniff negotiation =%d......",negotiation);
         if (negotiation == 1) {
             //三次请求的相同sniff参数对端设备都不接受 只能进行下一组参数的请求
             negotiation_count++;
@@ -284,18 +286,18 @@ void btstack_edr_start_after_init(int param)
 	#endif
 
 #else
-    #ifdef LITEEMF_ENABLED
-    if(edr_sniff_by_remote){
-        lmp_set_sniff_establish_by_remote(1);
-    }
+    #if defined LITEEMF_ENABLED && SNIFF_MODE_RESET_ANCHOR
+    /*  ** switch 主机模式必须添加, 其他模式如果不调用连接pc会导致sniff interval 协商失败
+        ** 原厂修改lib支持interval回调,修改了主机发送out数据后不激活从机进入active,根据项目选择
+    */
+    // if(edr_sniff_by_remote)
+    lmp_set_sniff_establish_by_remote(1);
     #endif
-
-    bt_wait_phone_connect_control(1);
 #endif
 
 #if SNIFF_ENABLE
     /* bt_wait_phone_connect_control_ext(1, 1); */
-    #ifdef LITEEMF_ENABLED
+    #if defined LITEEMF_ENABLED && SNIFF_MODE_RESET_ANCHOR
     if(!edr_sniff_by_remote)
     #endif
     {
@@ -418,8 +420,7 @@ static int bt_comm_edr_status_event_handler(struct bt_event *bt)
 
     case BT_STATUS_SNIFF_STATE_UPDATE:
         log_info(" BT_STATUS_SNIFF_STATE_UPDATE %d\n", bt->value);    //0:acitve 1:sniff
-        #ifdef LITEEMF_ENABLED
-        bt_sniff_param_hook(bt->args, sniff_param_info->max_interval_slots + negotiation_sniff_interval_offset);
+        #if defined LITEEMF_ENABLED && SNIFF_MODE_RESET_ANCHOR
         if(!edr_sniff_by_remote)
         #endif
         {
@@ -499,7 +500,7 @@ static void bt_check_enter_sniff()
     ASSERT(conn_cnt <= 2);
 
     for (i = 0; i < conn_cnt; i++) {
-        log_info("-----USER SEND SNIFF IN %d %d\n", i, conn_cnt);
+        log_info("-----USER SEND SNIFF IN %d %d sniff=%d %d\n", i, conn_cnt, sniff_param_info->min_interval_slots,sniff_param_info->max_interval_slots);
         sniff_ctrl_config.sniff_max_interval = sniff_param_info->max_interval_slots;
         sniff_ctrl_config.sniff_mix_interval = sniff_param_info->min_interval_slots;
         sniff_ctrl_config.sniff_attemp = sniff_param_info->attempt_slots;
@@ -876,7 +877,7 @@ void bt_comm_edr_mode_enable(u8 enable)
 #if (USER_SUPPORT_PROFILE_HID==1)
         user_hid_enable(1);
 #endif
-        #ifdef LITEEMF_ENABLED
+        #if defined LITEEMF_ENABLED && SNIFF_MODE_RESET_ANCHOR
         if(!edr_sniff_by_remote)
         #endif
         {
@@ -895,7 +896,7 @@ void bt_comm_edr_mode_enable(u8 enable)
         user_hid_enable(0);
 #endif
         bt_wait_phone_connect_control(0);
-        #ifdef LITEEMF_ENABLED
+        #if defined LITEEMF_ENABLED && SNIFF_MODE_RESET_ANCHOR
         if(!edr_sniff_by_remote)
         #endif
         {

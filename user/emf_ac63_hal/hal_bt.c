@@ -46,6 +46,9 @@
 ********************************************************************************************************************/
 uint8_t bas_mac[6];
 
+
+
+//配置主机需要连接的广播类型,绑定
 #if TCFG_USER_BLE_ENABLE
 static const ble_init_cfg_t ble_default_config = {
     .same_address = 0,
@@ -59,16 +62,24 @@ static const ble_init_cfg_t ble_default_config = {
 //==========================================================
 #if SNIFF_MODE_RESET_ANCHOR               //键盘鼠标sniff模式,固定小周期发包,多按键响应快
     #define SNIFF_MODE_TYPE               SNIFF_MODE_ANCHOR
-    #define SNIFF_CNT_TIME                1/////<空闲100mS之后进入sniff模式
+    #define SNIFF_CNT_TIME                1     //<空闲100mS之后进入sniff模式
 
-    #define SNIFF_MAX_INTERVALSLOT        8	//从机anchor point锚点间隔,间隔到了就会唤醒收发数据  time=n*0.625ms
-    #define SNIFF_MIN_INTERVALSLOT        8
-    #define SNIFF_ATTEMPT_SLOT            2		//锚点时间到唤醒后保持监听M->S slot个数, 必须<=SNIFF_MIN_INTERVALSLOT/2(注意监听要包含S-M slot,所以时间是SLOT*(2+1))
-    #define SNIFF_TIMEOUT_SLOT            1		//监听到数据后,延长监听的格式,防止太快进入休眠 
+    #ifndef SNIFF_MAX_INTERVALSLOT              //从机anchor point锚点间隔,间隔到了就会唤醒收发数据  time=n*0.625ms
+    #define SNIFF_MAX_INTERVALSLOT        8	    
+    #endif
+    #ifndef SNIFF_MIN_INTERVALSLOT
+    #define SNIFF_MIN_INTERVALSLOT        4
+    #endif
+    #ifndef SNIFF_ATTEMPT_SLOT                  //锚点时间到唤醒后保持监听M->S slot个数, 必须<=SNIFF_MIN_INTERVALSLOT/2(注意监听要包含S-M slot,所以时间是SLOT*(2+1))
+    #define SNIFF_ATTEMPT_SLOT            2		
+    #endif
+    #ifndef SNIFF_TIMEOUT_SLOT                  //监听到数据后,延长监听的格式,防止太快进入休眠 
+    #define SNIFF_TIMEOUT_SLOT            1		
+    #endif
     #define SNIFF_CHECK_TIMER_PERIOD      100
 #else                                     //待机固定500ms sniff周期,待机功耗较低,按键唤醒有延时
     #define SNIFF_MODE_TYPE               SNIFF_MODE_DEF
-    #define SNIFF_CNT_TIME                5/////<空闲5S之后进入sniff模式
+    #define SNIFF_CNT_TIME                5     //<空闲5S之后进入sniff模式
 
     #define SNIFF_MAX_INTERVALSLOT        800
     #define SNIFF_MIN_INTERVALSLOT        100
@@ -113,7 +124,7 @@ static const edr_init_cfg_t edr_default_config = {
 **	static Function
 ******************************************************************************************************/
 extern void ble_set_pair_addrinfo(u8 *addr_info);
-
+extern void le_hogp_set_output_callback(void *cb);
 
 void bt_sniff_param_hook(u8 *addr, u16 t_sniff)
 {
@@ -128,15 +139,168 @@ void bt_sniff_param_hook(u8 *addr, u16 t_sniff)
     }
 }
 
+void clear_app_bond_info(bt_t bt)
+{
+    uint8_t tmp_addr_info[7] = {0xff};
+
+    if(bt == TR_BLE_RF){
+        syscfg_write(CFG_AAP_MODE_24G_ADDR, tmp_addr_info, 1);
+    }else if(bt == TR_BLE){
+        syscfg_write(CFG_AAP_MODE_BLE_ADDR, tmp_addr_info, 1);
+    }
+    
+    extern void le_hogp_set_pair_allow(void);
+    le_hogp_set_pair_allow();
+}
+
+
+static int check_update_ble_list(u8 *old_addr_info, u8 *new_addr_info)
+{
+    u8 tmp_address1[6];
+    u8 tmp_address2[6];
+    u8 tmp_out_address1[6];
+    u8 tmp_out_address2[6];
+    int ret = 1;
+
+    swapX(old_addr_info + 1, tmp_address1, 6);
+    swapX(new_addr_info + 1, tmp_address2, 6);
+
+    bool ret1 = ble_list_get_id_addr(tmp_address1, old_addr_info[0], tmp_out_address1);
+    bool ret2 = ble_list_get_id_addr(tmp_address2, new_addr_info[0], tmp_out_address2);
+
+    logi("%s: have_id_address? %d, %d", __FUNCTION__, ret1, ret2);
+    put_buf(old_addr_info, 7);
+    put_buf(new_addr_info, 7);
+
+    put_buf(tmp_address1, 6);
+    put_buf(tmp_address2, 6);
+
+    if (ret1) {
+        if (ret2 && 0 == memcmp(tmp_out_address1, tmp_out_address2, 6)) {
+            //地址一样
+            logi("the same id_address");
+            ret = 2;
+        } else {
+            logi("ble old id_address");
+            put_buf(tmp_out_address1, 6);
+            ret1 = ble_list_delete_device(tmp_address1, old_addr_info[0]);
+            logi("del dev result:%d", ret1);
+        }
+    }
+    return ret;
+}
+
+static bool check_ble_24g_new_address_is_same(uint8_t id,uint16_t trps)
+{
+    u8 old_addr_info[7];
+    bool result = false;
+    u16 vm_id;
+
+    #if BT0_SUPPORT & (BIT_ENUM(TR_BLE) | BIT_ENUM(TR_BLE_RF))
+    if(trps & BT0_SUPPORT & BIT(TR_BLE_RF)){
+        vm_id = CFG_AAP_MODE_24G_ADDR;
+    }else if(trps & BT0_SUPPORT & BIT(TR_BLE)) {
+        vm_id = CFG_AAP_MODE_BLE_ADDR;
+    }
+    #endif
+
+    int ret = syscfg_read(vm_id, old_addr_info, 7);
+    if (ret > 0) {
+        if (2 == check_update_ble_list(old_addr_info, ble_cur_connect_addrinfo())) {
+            result = true;
+        }
+    }
+    logi("%s: %d", __FUNCTION__, result);
+    return result;
+}
+
+static void pair_info_address_update(uint8_t id,uint16_t trps, u8 *new_addr_info)
+{
+    u8 old_addr_info[7];
+    int ret = 0;
+
+    memset(old_addr_info, 0xff, 7);
+
+    logd("%s", __FUNCTION__);
+
+    if(trps & BT0_SUPPORT & BIT(TR_EDR)){
+        #if BT0_SUPPORT & BIT_ENUM(TR_EDR)
+        ret = syscfg_read(CFG_AAP_MODE_EDR_ADDR, old_addr_info, 6);
+        if (ret < 0 || memcmp(new_addr_info, old_addr_info, 6)) {
+            if (ret > 0) {
+                logi("delete edr old address");
+                put_buf(old_addr_info, 6);
+                //清EDR回连地址
+                delete_link_key(old_addr_info, get_remote_dev_info_index());
+            }
+            logi("add edr new address");
+            put_buf(old_addr_info, 6);
+            syscfg_write(CFG_AAP_MODE_EDR_ADDR, new_addr_info, 6);
+        }
+        #endif
+    }else if(trps & BT0_SUPPORT & BIT(TR_BLE_RF)){
+        #if BT0_SUPPORT & BIT_ENUM(TR_BLE_RF)
+        ret = syscfg_read(CFG_AAP_MODE_24G_ADDR, old_addr_info, 7);
+        if (ret < 0) {
+            syscfg_write(CFG_AAP_MODE_24G_ADDR, new_addr_info, 7);
+        } else if (check_update_ble_list(old_addr_info, new_addr_info)) {
+            syscfg_write(CFG_AAP_MODE_24G_ADDR, new_addr_info, 7);
+        }
+        #endif
+    }else if(trps & BT0_SUPPORT & BIT(TR_BLE)){
+        #if BT0_SUPPORT & BIT_ENUM(TR_BLE)
+        ret = syscfg_read(CFG_AAP_MODE_BLE_ADDR, old_addr_info, 7);
+        if (ret < 0) {
+            syscfg_write(CFG_AAP_MODE_BLE_ADDR, new_addr_info, 7);
+        } else if (check_update_ble_list(old_addr_info, new_addr_info)) {
+            syscfg_write(CFG_AAP_MODE_BLE_ADDR, new_addr_info, 7);
+        }
+        #endif
+    }
+}
+
+
+
+/*
+* 蓝牙连接完成,从机发送phy设置, 可以从机主动调用, 也可以主机调用
+* phy设置和连接参数请求指令不能同时发送否则会断开连接
+*/
+bool hal_bt_select_phy(uint16_t handle)
+{
+    #if BT0_SUPPORT & (BIT_ENUM(TR_BLE_RF) | BIT_ENUM(TR_BLE_RFC))
+    if(m_trps & BT0_SUPPORT & BIT(BT_BLE_RF)){
+        switch (SELECT_BLE_RF_PHY) {
+        case CONN_SET_1M_PHY:
+            logd("SELECT PHY IS :1M");
+            break;
+        case CONN_SET_2M_PHY:
+            logd("SELECT PHY IS: 2M");
+            break;
+        case CONN_SET_CODED_PHY:
+            if (SELECT_BLE_RF_CODED_S2_OR_S8 == CONN_SET_PHY_OPTIONS_S2) {
+                logd("SELECT PHY IS: CODED S2");
+            } else if (SELECT_BLE_RF_CODED_S2_OR_S8 == CONN_SET_PHY_OPTIONS_S8) {
+                logd("SELECT PHY IS: CODED S8");
+            }
+            break;
+        default:
+            break;
+        }
+        ble_comm_set_connection_data_phy(handle, SELECT_BLE_RF_PHY, SELECT_BLE_RF_PHY, SELECT_BLE_RF_CODED_S2_OR_S8);//向对端发起phy通道更改
+    }
+    #endif
+    return true;
+}
 //选择蓝牙从机模式
-bool hal_bt_select_mode(uint8_t id,uint16_t trps)
+bool hal_bt_mode_set(uint8_t id,uint16_t trps)
 {
     uint8_t i;
     api_bt_ctb_t* bt_ctbp;
 
     logi("bt trps %x\n", trps);
 
-    #if BT0_SUPPORT & (BIT_ENUM(TR_BLE) | BIT_ENUM(TR_BLE_RF))
+    //同时开启ble 和2.4G时
+    #if (BT0_SUPPORT & (BIT_ENUM(TR_BLE) | BIT_ENUM(TR_BLE_RF))) == (BIT_ENUM(TR_BLE) | BIT_ENUM(TR_BLE_RF))
     u8 tmp_addr_info[7];
     if(trps & BT0_SUPPORT & BIT(TR_BLE_RF)){
         if (7 == syscfg_read(CFG_AAP_MODE_24G_ADDR, tmp_addr_info, 7)) {    //切换恢复ble配对信息
@@ -151,7 +315,9 @@ bool hal_bt_select_mode(uint8_t id,uint16_t trps)
             ble_set_pair_addrinfo(NULL);
         }
     }
+    #endif
 
+    #if BT0_SUPPORT & (BIT_ENUM(TR_BLE) | BIT_ENUM(TR_BLE_RF))
     if(trps & BT0_SUPPORT & BIT(TR_BLE_RF)){
         bt_ctbp = api_bt_get_ctb(TR_BLE_RF);
 	    
@@ -161,13 +327,6 @@ bool hal_bt_select_mode(uint8_t id,uint16_t trps)
             putchar('W');
             os_time_dly(1);
         }
-		if(api_bt_is_bonded(BT_ID0, TR_BLE_RF)){
-            le_hogp_set_reconnect_adv_cfg(ADV_DIRECT_IND_LOW, 0);
-			call_hogp_adv_config_set();
-        }
-        if(NULL != bt_ctbp){
-            hal_bt_enable(BT_ID0,TR_BLE_RF,bt_ctbp->enable);
-        }
     }else if(trps & BT0_SUPPORT & BIT(TR_BLE)) {
         logi("---------app select ble--------\n");
         bt_ctbp = api_bt_get_ctb(TR_BLE);
@@ -176,38 +335,54 @@ bool hal_bt_select_mode(uint8_t id,uint16_t trps)
             putchar('W');
             os_time_dly(1);
         }
-        if(NULL != bt_ctbp){
-            hal_bt_enable(BT_ID0,BT_BLE,bt_ctbp->enable);
-        }
-    }else{
-        hal_bt_enable(BT_ID0, BT_BLE, 0);
     }
     #endif
 
+    #if BT0_SUPPORT & (BIT_ENUM(TR_BLEC) | BIT_ENUM(TR_BLE_RFC))
+    if(trps & BT0_SUPPORT & BIT(TR_BLE_RFC)){
+        logi("---------app select 24gc--------\n");
+        rf_set_24g_hackable_coded(CFG_RF_24G_CODE_ID);
+    }else if(trps & BT0_SUPPORT & BIT(TR_BLEC)) {
+        logi("---------app select blec--------\n");
+    }
+    #endif
 
     #if BT0_SUPPORT & BIT_ENUM(TR_EDR)
     if(trps & BT0_SUPPORT & BIT(TR_EDR)) {
-        #if BT0_SUPPORT & BIT_ENUM(TR_EDR)
-        bt_ctbp = api_bt_get_ctb(TR_EDR);
         logi("---------app select edr--------\n");
-        hal_bt_enable(BT_ID0,BT_EDR,bt_ctbp->enable);          //打开edr
-		#endif
-    }else{
-        hal_bt_enable(BT_ID0, BT_EDR, 0);
     }
     #endif
+    #if BT0_SUPPORT & BIT_ENUM(TR_EDRC)
+    if(trps & BT0_SUPPORT & BIT(TR_EDRC)) {
+        logi("---------app select edrc--------\n");
+    }
+    #endif
+
     return true;
 }
 
 
 //BLE 私有协议从机接收数据
-void ble_hid_transfer_channel_recieve(uint8_t* p_attrib_value,uint16_t length)
+void ble_hid_transfer_channel_recieve(uint8_t server, uint8_t* p_attrib_value,uint16_t length)
 {
+    bt_t bt;
     bt_evt_rx_t evt;
-    evt.bts = BT_UART;
-	evt.buf = p_attrib_value;
-	evt.len = length;
-    if(length) api_bt_event(BT_ID0,BT_BLE,BT_EVT_RX,&evt);    
+    
+    if(length) {
+        if(server == 0){
+            evt.bts = BT_UART;
+        }else{
+            evt.bts = BT_HID;
+        }
+        evt.buf = p_attrib_value;
+        evt.len = length;
+        if(m_trps & BT0_SUPPORT & BIT(BT_BLE_RF)){
+            bt = BT_BLE_RF;
+        }else{
+            bt = BT_BLE;
+        }
+        api_bt_event(BT_ID0,bt,BT_EVT_RX,&evt);    
+    }
 }
 
 //edr 从机接收数据
@@ -215,8 +390,8 @@ void edr_out_callback(u8 *buffer, u16 length, u16 channel)
 {
     bt_evt_rx_t evt;
     evt.bts = BT_HID;
-	evt.buf = buffer+1;     //注意要去掉0XA2
-	evt.len = length-1;
+	evt.buf = buffer;     //注意这边不判断 0XA2， 0X43
+	evt.len = length;
 
     logd("%s,chl=%d,len=%d", __FUNCTION__, channel, length);
     if(length) api_bt_event(BT_ID0,BT_EDR,BT_EVT_RX,&evt);
@@ -243,38 +418,18 @@ void ble_status_callback(ble_state_e status, u8 reason)
         break;
     case BLE_ST_CONNECT:
         api_bt_event(BT_ID0,bt,BT_EVT_CONNECTED,NULL);
-        //选择物理层,这里不设置详见SET_SELECT_PHY_CFG
-        // if(m_trps & BT0_SUPPORT & BIT(BT_BLE_RF)){
-        //     ble_comm_set_connection_data_phy(reason, CONN_SET_1M_PHY, CONN_SET_1M_PHY, CONN_SET_PHY_OPTIONS_NONE);//向对端发起phy通道更改
-        // }
-
         #if (20 != API_BT_LL_MTU)
         ble_comm_set_connection_data_length(ble_hid_is_connected(), API_BT_LL_MTU+7, 2120);
         #endif
-
         break;
     case BLE_ST_SEND_DISCONN:
         break;
     case BLE_ST_DISCONN:
         api_bt_event(BT_ID0,bt,BT_EVT_DISCONNECTED,NULL);
         break;
-    case BLE_ST_NOTIFY_IDICATE:{
-        bt_evt_ready_t evt;
-        if(is_ble_notify_open(false)){
-            evt.bts = BT_UART;
-            evt.ready = true;
-            api_bt_event(BT_ID0,bt,BT_EVT_READY,&evt);
-        }
-        if(is_ble_notify_open(true)){
-            evt.bts = BT_HID;
-            evt.ready = true;
-            api_bt_event(BT_ID0,bt,BT_EVT_READY,&evt);
-        }
-        break;
-    }
     case BLE_PRIV_PAIR_ENCRYPTION_CHANGE:               //ble 2.4g切换保存当前配对信息
         logd("BLE_PRIV_PAIR_ENCRYPTION_CHANGE\n");
-        // pair_info_address_update(bt, ble_cur_connect_addrinfo());   //TODO
+        pair_info_address_update(BT_ID0,m_trps, ble_cur_connect_addrinfo());   //TODO
         break;
     #endif
     default:
@@ -296,7 +451,8 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
         //蓝牙初始化完成
         logd("BT_STATUS_INIT_OK\n");
 
-        ble_set_fix_pwr(9);//range:0~9
+        ble_set_fix_pwr(10);//range:0~9     CONFIG_CPU_BD19:0~10
+        hal_bt_mode_set(BT_ID0,m_trps);
 
         #if TCFG_USER_BLE_ENABLE
         btstack_ble_start_after_init(0);
@@ -311,7 +467,6 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
                 api_bt_event(BT_ID0, (bt_t)id, BT_EVT_INIT, NULL);
             }
         }
-        hal_bt_select_mode(BT_ID0,m_trps);
         break;
 
     #if BT0_SUPPORT & BIT_ENUM(TR_EDR)
@@ -434,7 +589,7 @@ bool hal_bt_is_bonded(uint8_t id, bt_t bt)
     #endif
     #if BT0_SUPPORT & (BIT_ENUM(TR_BLEC) | BIT_ENUM(TR_BLE_RFC))
     case BT_BLEC:
-    case BT_BLEC_RF:
+    case BT_BLE_RFC:
         ret = multi_client_is_bonded();
         break;
     #endif
@@ -467,9 +622,9 @@ bool hal_bt_debond(uint8_t id, bt_t bt)
     case BT_BLE_RF: 			//BLE模拟2.4G
          if(bt != BT_EDR){
             clear_app_bond_info(bt);
-            ble_gatt_server_module_enable(0);			//断开连接
-            sdk_bt_adv_set(bt, BLE_ADV_IND);            //说明必须修改设置后再开启广播
-            
+            ble_gatt_server_module_enable(0);			//断开连接       
+            extern void hogp_reconnect_adv_config_set(u8 adv_type, u32 adv_timeout);
+            hogp_reconnect_adv_config_set(ADV_IND, 0);  //说明必须修改设置后再开启广播
             ble_gatt_server_module_enable(1);			//重新开启广播
             ble_gatt_server_adv_enable(bt_ctbp->enable);
             ret = true;
@@ -478,14 +633,14 @@ bool hal_bt_debond(uint8_t id, bt_t bt)
     #endif
     #if BT0_SUPPORT & (BIT_ENUM(TR_BLEC) | BIT_ENUM(TR_BLE_RFC))
     case BT_BLEC:
-    case BT_BLEC_RF:
+    case BT_BLE_RFC:
         ret = !multi_client_clear_pair();
         break;
     #endif
     #if BT0_SUPPORT & BIT_ENUM(TR_EDR)
-    case BT_EDR: 	 
-        ret = !delete_last_device_from_vm();   
-        user_hid_disconnect();
+    case BT_EDR: 
+        ret = !delete_last_device_from_vm();  
+        hal_bt_disconnect(id, bt);
         bt_wait_phone_connect_control(1);                 //开启蓝牙可发现可链接
         break;
     #endif
@@ -513,7 +668,7 @@ bool hal_bt_disconnect(uint8_t id, bt_t bt)
     #endif
     #if BT0_SUPPORT & (BIT_ENUM(TR_BLEC) | BIT_ENUM(TR_BLE_RFC))
     case BT_BLEC:
-    case BT_BLEC_RF:
+    case BT_BLE_RFC:
         break;
     #endif
     #if BT0_SUPPORT & BIT_ENUM(TR_EDR)
@@ -549,7 +704,7 @@ bool hal_bt_enable(uint8_t id, bt_t bt,bool en)
     #endif
     #if BT0_SUPPORT & (BIT_ENUM(TR_BLEC) | BIT_ENUM(TR_BLE_RFC))
     case BT_BLEC:
-    case BT_BLEC_RF:
+    case BT_BLE_RFC:
         if(en){
             ble_gatt_client_module_enable(1);
             ble_gatt_client_scan_enable(1);
@@ -560,24 +715,15 @@ bool hal_bt_enable(uint8_t id, bt_t bt,bool en)
     #endif
     #if BT0_SUPPORT & BIT_ENUM(TR_EDR)
     case BT_EDR: 	
-        if (en) {
-            user_hid_enable(1);
-            btctrler_task_init_bredr();
+        bt_comm_edr_mode_enable(en);
+        if(en){
             if(!bt_connect_phone_back_start()){     //先回连
                 bt_wait_phone_connect_control(1);
             }
             if(!edr_sniff_by_remote){
                 sys_auto_sniff_controle(1, NULL);
             }
-
-        } else {
-            user_hid_enable(0);
-            bt_wait_phone_connect_control(0);
-            if(!edr_sniff_by_remote){
-                sys_auto_sniff_controle(0, NULL);
-            }
-            btctrler_task_close_bredr();
-        }    
+        }  
         break;
     #endif
     #if BT0_SUPPORT & BIT_ENUM(TR_EDRC)
@@ -607,7 +753,7 @@ bool hal_bt_uart_tx(uint8_t id, bt_t bt,uint8_t *buf, uint16_t len)
     #endif
     #if BT0_SUPPORT & (BIT_ENUM(TR_BLEC) | BIT_ENUM(TR_BLE_RFC))
     case BT_BLEC:
-    case BT_BLEC_RF:
+    case BT_BLE_RFC:
         return  multi_client_user_server_write( buf,  len);
         break;
     #endif
@@ -630,7 +776,7 @@ bool hal_bt_uart_tx(uint8_t id, bt_t bt,uint8_t *buf, uint16_t len)
 
 
 
-bool hal_bt_hid_tx(uint8_t id, bt_t bt,uint8_t*buf, uint16_t len)
+bool hal_bt_hid_tx(uint8_t id, bt_t bt, uint8_t hid_requset,uint8_t*buf, uint16_t len)
 {
     bool ret = false;
 
@@ -644,13 +790,17 @@ bool hal_bt_hid_tx(uint8_t id, bt_t bt,uint8_t*buf, uint16_t len)
     #endif
     #if BT0_SUPPORT & (BIT_ENUM(TR_BLEC) | BIT_ENUM(TR_BLE_RFC))
     case BT_BLEC:
-    case BT_BLEC_RF:
+    case BT_BLE_RFC:
         //unsupport
         break;
     #endif
     #if BT0_SUPPORT & BIT_ENUM(TR_EDR)
     case BT_EDR: 
-        ret = (0 == edr_hid_data_send(buf[0], buf+1, len-1));	    
+        if((hid_requset&0x0f) == HID_REPORT_TYPE_FEATURE){
+            ret = (0 == edr_hid_feature_send(buf[0], buf+1, len-1));
+        }else{
+            ret = (0 == edr_hid_data_send(buf[0], buf+1, len-1));
+        }	    
         break;
     #endif
     #if BT0_SUPPORT & BIT_ENUM(TR_EDRC)
@@ -701,6 +851,10 @@ static void user_hid_set_reportmap (bt_t bt)
             if(bt_ctbp->hid_types & BIT(i)){
                 len = get_hid_desc_map((trp_t)bt, i ,&hid_mapp);
                 memcpy(report_mapp, hid_mapp, len);
+                //MT 模式下鼠标需要使用05 0D
+                if((bt_ctbp->hid_types & (BIT(HID_TYPE_MT) | BIT(HID_TYPE_MOUSE))) && (HID_TYPE_MOUSE == i)){
+                    report_mapp[1] = 0x0d;
+                }
                 report_mapp += len;
             }
         }
@@ -730,6 +884,11 @@ bool hal_bt_init(uint8_t id)
 
     if(BT_ID0 != id) return false;
 
+    //配置CODED类型, 选择CONN_SET_CODED_PHY 才生效
+    #if TCFG_USER_BLE_ENABLE && (CONN_SET_CODED_PHY == SELECT_BLE_RF_PHY)
+    ll_vendor_set_code_type(SELECT_BLE_RF_CODED_S2_OR_S8);
+    #endif
+
     u32 sys_clk =  clk_get("sys");
     bt_pll_para(TCFG_CLOCK_OSC_HZ, sys_clk, 0, 0);
 
@@ -747,6 +906,7 @@ bool hal_bt_init(uint8_t id)
 
     #if TCFG_USER_BLE_ENABLE
     btstack_ble_start_before_init(&ble_default_config, 0);
+    le_hogp_set_output_callback(ble_hid_transfer_channel_recieve);
     #endif
     
     //设置EDR基础蓝牙地址和蓝牙名称,BLE地址和名称是基于EDR地址和名称上修改
@@ -763,13 +923,18 @@ bool hal_bt_init(uint8_t id)
 	#endif
 
     #if TCFG_USER_BLE_ENABLE
-    api_bt_get_mac(BT_ID0,BT_BLE, tmp_addr);
+    bt_t bt = BT_BLE;
+    if(m_trps & BT0_SUPPORT & BIT(BT_BLE_RF)){
+        bt = BT_BLE_RF;
+    }
+
+    api_bt_get_mac(BT_ID0,bt, tmp_addr);
     le_controller_set_mac((void *)tmp_addr);
-    device_name_len = api_bt_get_name(BT_ID0,BT_BLE,device_name,sizeof(device_name) );       //设置BLE蓝牙名称
+    device_name_len = api_bt_get_name(BT_ID0,bt,device_name,sizeof(device_name) );       //设置BLE蓝牙名称
     ble_comm_set_config_name(device_name, 0);
     logi("ble name(%d): %s \n", device_name_len, device_name);dumpd(tmp_addr,6);
     #if BLE_HID_SUPPORT && TCFG_USER_BLE_ENABLE
-    user_hid_set_reportmap (BT_BLE);
+    user_hid_set_reportmap (bt);
     #endif
     #endif
 

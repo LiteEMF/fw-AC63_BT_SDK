@@ -11,7 +11,7 @@
 #define CONFIG_DOUBLE_BANK_ENABLE               0       //单双备份选择(若打开了改宏,FLASH结构变为双备份结构，适用于接入第三方协议的OTA， PS: JL-OTA同样支持双备份升级, 需要根据实际FLASH大小同时配置CONFIG_FLASH_SIZE)
 #endif
 #ifndef CONFIG_APP_OTA_ENABLE
-#define CONFIG_APP_OTA_ENABLE                   0       //是否支持RCSP升级(JL-OTA)
+#define CONFIG_APP_OTA_ENABLE                   1       //是否支持RCSP升级(JL-OTA)
 #endif
 #define CONFIG_UPDATE_JUMP_TO_MASK              0   	//配置升级到loader的方式0为直接reset,1为跳转(适用于芯片电源由IO口KEEP住的方案,需要注意检查跳转前是否将使用DMA的硬件模块全部关闭)
 
@@ -50,8 +50,9 @@
 //it can be modified before first programming,but keep the same as the original version
 #define CONFIG_PID                              AC632N              //烧写或强制升级之前可以修改,之后升级要保持一致
 //it can be modified before first programming,but keep the same as the original version
+#ifndef CONFIG_VID
 #define CONFIG_VID                              0.01				//烧写或强制升级之前可以修改,之后升级要保持一致
-
+#endif
 //Project with bluetooth,it must use OSC as PLL_SOURCE;
 #define CONFIG_PLL_SOURCE_USING_LRC             0       			//PLL时钟源选择 1:LRC 2:OSC
 

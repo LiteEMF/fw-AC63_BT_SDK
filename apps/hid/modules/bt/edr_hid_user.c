@@ -59,7 +59,9 @@ int hid_timer_id = 0;
 
 int edr_hid_timer_handle = 0;
 
-#define HID_SEND_MAX_SIZE   (64+2) //描述符数据包的长度+2byte len
+#ifndef HID_SEND_MAX_SIZE               //描述符数据包的长度+2byte len
+#define HID_SEND_MAX_SIZE   (128+2)
+#endif
 /* static u8  edr_hid_one_packet[HID_SEND_MAX_SIZE]; */
 /* static volatile u16 edr_send_packet_len = 0; */
 static volatile u8  bt_send_busy = 0;
@@ -412,18 +414,22 @@ int user_hid_send_data(u8 *buf, u32 len)
 {
     int ret;
     hid_s_param_t s_par;
-    if (!hid_channel) {
+    if (!hid_channel) {             //TODO 可以优化判断ctrl channel
         return -1;
     }
 
-    s_par.chl_id = hid_channel;
+    if((buf[0] & 0x0f) == 0x03){    //TODO 只处理featrue，其他不确定暂时不修改
+        s_par.chl_id = hid_ctrl_channel;
+    }else{
+        s_par.chl_id = hid_channel;
+    }
     s_par.data_len = len;
     s_par.data_ptr = buf;
 
     ret = user_send_cmd_prepare(USER_CTRL_HID_SEND_DATA, sizeof(hid_s_param_t), (u8 *)&s_par);
 
     if (ret) {
-        log_info("hid send fail!!! %d\n", ret);
+        log_info("EDRerr%d\n", ret);
     }
     return ret;
 }
@@ -460,7 +466,8 @@ static void user_hid_msg_handler(u32 msg, u8 *packet, u32 packet_size)
         break;
 
     case 3:
-        if (hid_channel == little_endian_read_16(packet, 0)) {
+        if (hid_channel == little_endian_read_16(packet, 0) || \
+            hid_ctrl_channel == little_endian_read_16(packet, 0)) {
             user_hid_send_ok_callback();
         }
         break;
@@ -487,6 +494,7 @@ void user_hid_init(void (*user_hid_output_handler)(u8 *packet, u16 size, u16 cha
     hid_channel = 0;
     hid_ctrl_channel = 0;
     hid_diy_regiest_callback(user_hid_msg_handler, user_hid_output_handler);
+    // hid_diy_regiest_ctrl_parse(user_hid_output_handler);//ctrl 数据自定义接收，不经过蓝牙lib
 
     if (!hid_run) {
         log_info("hid_sdp_init\n");
@@ -502,6 +510,9 @@ void user_hid_init(void (*user_hid_output_handler)(u8 *packet, u16 size, u16 cha
         cbuf_init(&user_send_cbuf, hid_tmp_buffer, HID_TMP_BUFSIZE);
         hid_run = 1;
     }
+    //liteemf add
+    hid_diy_set_cmdbuf_size(MIN(64+2,HID_SEND_MAX_SIZE));            //设置hid freature长度
+    hid_diy_set_sendbuf_size(HID_SEND_MAX_SIZE);
 }
 
 /*************************************************************************************************/
@@ -609,6 +620,11 @@ int edr_hid_data_send_ext(u8 report_type, u8 report_id, u8 *data, u16 len)
 int edr_hid_data_send(u8 report_id, u8 *data, u16 len)
 {
     return edr_hid_data_send_ext(HID_DATA | DATA_INPUT, report_id, data, len);
+}
+
+int edr_hid_feature_send(u8 report_id, u8 *data, u16 len)
+{
+    return edr_hid_data_send_ext(HID_DATA | DATA_FEATURE, report_id, data, len);
 }
 
 /*************************************************************************************************/

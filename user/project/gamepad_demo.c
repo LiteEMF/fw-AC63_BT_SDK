@@ -71,14 +71,13 @@ bool rgb_driver_deinit(void)
 #if API_BT_ENABLE
 void api_bt_rx(uint8_t id,bt_t bt, bt_evt_rx_t* pa)
 {
-    logd("bt%d rx:%d\n",bt,pa->len);    //dumpd(pa->buf,pa->len);
+    logd("bt%d rx:%d\n",bt,pa->len);    dumpd(pa->buf,pa->len);
 
 	api_bt_ctb_t* bt_ctbp;
 
 	bt_ctbp = api_bt_get_ctb(bt);
 	if(NULL == bt_ctbp) return;
 
-	#define EDR_HID_SUPPORT				BIT_ENUM(HID_TYPE_VENDOR)
 
 	if(BT_HID & pa->bts){
 	#if EDR_HID_SUPPORT & HID_GAMEPAD_MASK
@@ -88,7 +87,7 @@ void api_bt_rx(uint8_t id,bt_t bt, bt_evt_rx_t* pa)
 		app_gamepad_dev_process(&handle, pa->buf, pa->len);
 	#else
 		trp_handle_t handle = {bt,id,U16(DEV_TYPE_HID, HID_TYPE_VENDOR)};
-		app_command_rx(&handle,pa->buf, pa->len);
+		app_command_rx(&handle,pa->buf+1, pa->len-1);	//丢弃hid_report_type_t
 	#endif
 
 	}else if(BT_UART == pa->bts){					//uart
@@ -124,7 +123,7 @@ void app_key_event(void)
 			}
 		}
 	}
-    if(m_systick <= 5000){
+    if(m_systick <= 5000 || 1){
         if((m_app_key.press_long & (HW_KEY_B | HW_KEY_X)) == (HW_KEY_B | HW_KEY_X)){
             api_boot(1);
         }
@@ -164,11 +163,11 @@ void hw_user_vender_init(void)
 	for(bt = 0; bt < BT_MAX; bt++){
 		if(BT_BLE == bt){
 			#if (BT_SUPPORT & BIT_ENUM(TR_BLE)) && BLE_HID_SUPPORT
-			api_transport_set_type(id,bt, m_dev_mode, m_hid_mode);
+			api_transport_set_type(0, bt, m_dev_mode, m_hid_mode);
 			#endif
 		}else if(BT_EDR == bt){
 			#if (BT_SUPPORT & BIT_ENUM(TR_EDR)) && EDR_HID_SUPPORT
-			api_transport_set_type(id,bt, m_dev_mode, m_hid_mode);
+			api_transport_set_type(0, bt, m_dev_mode, m_hid_mode);
 			#endif
 		}
 	}
@@ -188,8 +187,8 @@ void user_vender_init(void)
     uint8_t i;
     logd("call user_vender_init ok\n" );
 	
-	app_rumble_set_duty(0, 250, 500);
-	app_rumble_set_duty(1, 250, 500);
+	// app_rumble_set_duty(0, 250, 500);
+	// app_rumble_set_duty(1, 250, 500);
 	#if APP_RGB_ENABLE
     for(i=0; i<APP_RGB_NUMS; i++){
         app_rgb_set_blink(i, Color_White, BLINK_SLOW);
@@ -202,39 +201,83 @@ void user_vender_deinit(void)			//关机前deinit
 	logd("user_vender_deinit\n");
 }
 
-bool bt_gamepad_key_send(bt_t bt, app_gamepad_key_t *keyp)
-{
-	api_bt_ctb_t* bt_ctbp = api_bt_get_ctb(bt);
-	trp_handle_t bt_handle;
-	hid_type_t hid_type;
 
-	if(NULL == bt_ctbp) return false;
-	hid_type = app_gamepad_get_hidtype(bt_ctbp->hid_types);
-	bt_handle.id = BT_ID0;
-	bt_handle.trp = bt;
-	bt_handle.index = U16(DEF_DEV_TYPE_HID,hid_type);
-	return app_gamepad_key_send(&bt_handle, keyp);
+/*******************************************************************
+** Parameters:		
+** Returns:	
+** Description:	简化发送流程, 	
+*******************************************************************/
+bool trp_gamepad_key_send(uint8_t id, trp_t trp, app_gamepad_key_t *keyp)
+{
+	trp_handle_t handle;
+	hid_type_t hid_type = HID_TYPE_NONE;
+
+	if(api_trp_is_bt(trp)){
+		#if API_BT_ENABLE
+		api_bt_ctb_t* bt_ctbp = api_bt_get_ctb(trp);
+		if(NULL == bt_ctbp) return false;
+		hid_type = app_gamepad_get_hidtype(bt_ctbp->hid_types);
+		#endif
+	}else if(api_trp_is_usb(trp)){
+		#if API_USBD_BIT_ENABLE
+		hid_type = app_gamepad_get_hidtype(m_usbd_hid_types[id]);
+		#endif
+	}
+
+	handle.id = id;
+	handle.trp = trp;
+	handle.index = U16(DEF_DEV_TYPE_HID,hid_type);
+	return app_gamepad_key_send(&handle, keyp);
 }
 
-bool usb_gamepad_key_send(uint8_t id, app_gamepad_key_t *keyp)
-{
-	trp_handle_t usb_handle;
-	usbd_dev_t* pdev = usbd_get_dev(id);
-	hid_type_t hid_type;
 
-	hid_type = app_gamepad_get_hidtype(m_usbd_hid_types[id]);
-	usb_handle.id = id;
-	usb_handle.trp = TR_USBD;
-	usb_handle.index = U16(DEF_DEV_TYPE_HID,hid_type);
-	return app_gamepad_key_send(&usb_handle,keyp);
+void led_handler(void)
+{
+	#if APP_RGB_ENABLE
+	static timer_t timer;
+
+	api_bt_ctb_t* edr_ctbp = api_bt_get_ctb(BT_EDR);
+	api_bt_ctb_t* ble_ctbp = api_bt_get_ctb(BT_BLE);
+
+	if(m_systick - timer >= 50){
+		timer = m_systick;
+		if(PM_STA_CHARG_NOT_WORK == m_pm_sta){
+			app_rgb_set_static(0, 0x00, RGB_FOREVER);
+		}else if(PM_STA_NORMAL == m_pm_sta){
+			if(JOYSTICK_CAL_NONE != joystick_cal_sta){
+				if(JOYSTICK_CAL_SUCCEED == joystick_cal_sta){
+					app_rgb_set_static(0, Color_White, RGB_FOREVER);
+				}else{
+					app_rgb_set_blink(0, Color_White, BLINK_SLOW);
+				}
+			}else if(NULL != edr_ctbp){
+				if((BT_STA_CONN == edr_ctbp->sta)){
+					app_rgb_set_static(0, Color_White, RGB_FOREVER);
+				}else if(BT_STA_ADV == edr_ctbp->sta){
+					app_rgb_set_blink(0, Color_White, BLINK_FAST);
+				}else{
+					app_rgb_set_blink(0, Color_White, BLINK_SLOW);
+				}
+			}else if(NULL != ble_ctbp){
+				if((BT_STA_CONN == ble_ctbp->sta)){
+					app_rgb_set_static(0, Color_Green, RGB_FOREVER);
+				}else if(BT_STA_ADV == ble_ctbp->sta){
+					app_rgb_set_blink(0, Color_Green, BLINK_FAST);
+				}else{
+					app_rgb_set_blink(0, Color_Green, BLINK_SLOW);
+				}
+			}
+		}
+	}
+	#endif
 }
 
-
-void user_vender_handler(void)
+void user_vender_handler(uint32_t period_10us)
 {
     static timer_t timer;
 	static timer_t report_interval = 1500;
 
+	led_handler();
     //use test
 	if(m_task_tick10us - timer >= report_interval){
 		timer = m_task_tick10us;
@@ -245,11 +288,11 @@ void user_vender_handler(void)
 		//改建,连点,宏定义,摇杆
 		joystick_cfg_t tick_cfg = {0, 0, 10, 3};
 		joystick_cfg_t trigger_cfg = {0, 0, 5, 5};
-		app_stick_deadzone(&tick_cfg, &key.stick_l);
-		app_stick_deadzone(&tick_cfg, &key.stick_r);
-		app_trigger_deadzone(&trigger_cfg, &key.l2);
-		app_trigger_deadzone(&trigger_cfg, &key.r2);
-		// logd("k:%x %d %d %d %d\n",key.key,  m_gamepad_key.l2,m_gamepad_key.r2,key.l2,key.r2  );
+		app_stick_deadband(&tick_cfg, &key.stick_l);
+		app_stick_deadband(&tick_cfg, &key.stick_r);
+		app_trigger_deadband(&trigger_cfg, &key.l2);
+		app_trigger_deadband(&trigger_cfg, &key.r2);
+		// logd("k:%x %d %d %d %d\n",key.key,  key.stick_l.x,key.stick_l.y,key.stick_r.x,key.stick_r.y  );
 		//report
 		api_bt_ctb_t* edr_ctbp = api_bt_get_ctb(BT_EDR);
 		api_bt_ctb_t* ble_ctbp = api_bt_get_ctb(BT_BLE);
@@ -259,25 +302,32 @@ void user_vender_handler(void)
 			if(edr_ctbp->vendor_ready){
 				report_interval = edr_ctbp->inteval_10us;
 				trp_handle_t bt_handle = {BT_EDR, BT_ID0, U16(DEV_TYPE_VENDOR,0)};
+				app_gamepad_key_swapl(&key);
 				api_command_tx(&bt_handle,CMD_GAMEPAD_KEY,&key,sizeof(key));
 			}else if(edr_ctbp->hid_ready){
+
+				#if SNIFF_MODE_RESET_ANCHOR
 				report_interval = edr_ctbp->inteval_10us;
+				#else
+				report_interval = 500;
+				#endif
 				#if EDR_HID_SUPPORT & HID_GAMEPAD_MASK
-				bt_gamepad_key_send(BT_EDR, &key);
+				trp_gamepad_key_send(BT_ID0,BT_EDR, &key);
 				#else
 				trp_handle_t bt_handle = {BT_EDR, BT_ID0, U16(DEV_TYPE_HID,HID_TYPE_VENDOR)};
+				app_gamepad_key_swapl(&key);
 				api_command_tx(&bt_handle,CMD_GAMEPAD_KEY,&key,sizeof(key));
 				#endif
 			}
 		}else if((NULL != ble_ctbp) && ble_ctbp->hid_ready){
 			report_interval = ble_ctbp->inteval_10us;
-			bt_gamepad_key_send(BT_BLE, &key);
+			trp_gamepad_key_send(BT_ID0,BT_BLE, &key);
 		#if API_USBD_BIT_ENABLE
 		}else if((NULL != pusb_dev) && (pusb_dev->ready)){
 			report_interval = 800;
-			usb_gamepad_key_send(0,&key);
-		}
+			trp_gamepad_key_send(0,TR_USBD, &key);
 		#endif
+		}
     }
 
 }

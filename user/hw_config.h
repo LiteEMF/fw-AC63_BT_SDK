@@ -24,7 +24,7 @@ extern "C" {
 *******************************************************************************************************/
 #define HEAP_ID						0					/* used heap_n file*/
 #define LOG_ENABLE                  1
-#define CRC8_TABLE_EANBLE 			0					/*杰里默认有crc8校验*/
+#define CRC8_EANBLE 				0					/*杰里默认有crc8校验*/
 #define API_WDT_ENABLE				1
 
 #define TCFG_ADKEY_ENABLE					0
@@ -65,14 +65,15 @@ extern "C" {
 		#define SW_VERSION                  		0x0100
         #define DEFAULT_NAME			    		"hellow_keyboard"
         #define DEFAULT_MODEL						"HELKB"
+		#define CONFIG_VID                          HEKB
 
 	#else
 
 	#endif
 
 #elif PROJECT_GAMEPAD
-	#define GAMEPAD1					0				//测试工程
-	#define GAMEPAD_DEMO				0				//实际一个gamepad demo例程
+	#define GAMEPAD1					0	//测试工程
+	#define GAMEPAD_DEMO				0	//实际一个gamepad demo例程
 	#define KMFC						1
 	#define KMFCS						0
 
@@ -122,11 +123,12 @@ extern "C" {
 		#define SW_VERSION                     		0x0100
         #define DEFAULT_NAME			       		"gamepad"
         #define DEFAULT_MODEL						"GP_dev"
+		#define CONFIG_VID                          GPD
 	#elif GAMEPAD_DEMO	
 		#define API_STORAGE_ENABLE			1
 		#define API_PM_ENABLE				1
 		#define APP_KEY_ENABLE				1
-		//#define KEY_DUMP_ENABLE 			1
+		#define KEY_DUMP_ENABLE 			1
 		#define APP_CMD_ENABLE				1
 		#define TCFG_LOWPOWER_LOWPOWER_SEL	0		/*关闭修改防止定时器不准确*/
 		#define APP_RGB_ENABLE				1
@@ -135,8 +137,8 @@ extern "C" {
 		#define APP_GAMEAPD_ENABLE			1
 
 		#define APP_JOYSTICK_ENABLE			1
-		#define STICK_CAL_SIDE_DEADZONE		6
-		#define TRIGGER_CAL_DEADZONE		5      	//中心死区百分百
+		#define STICK_CAL_SIDE_DEADBAND		6
+		#define TRIGGER_CAL_DEADBAND		5      	//中心死区百分百
 		#define APP_STICK_ACTIVE 			{{true, true},{true, true}}
 		#define APP_TRIGGER_ACTIVE 			{false, false}
 		#define TRIGGER_LIMIT_MIN_R 		350
@@ -152,11 +154,12 @@ extern "C" {
 		#define IMU_ICM42688_ID				1
 
 		//bt 
+		#define SNIFF_MODE_RESET_ANCHOR		0		/*ps4 模式使用active 发送*/
 		#define BT0_SUPPORT					(BIT_ENUM(TR_EDR))
-		// #define EDR_TYPE_SUPPORT			(BIT_ENUM(DEV_TYPE_HID) | BIT_ENUM(DEV_TYPE_VENDOR))
-		// #define EDR_HID_SUPPORT				BIT_ENUM(HID_TYPE_XBOX)
 		#define EDR_TYPE_SUPPORT			(BIT_ENUM(DEV_TYPE_HID))
-		#define EDR_HID_SUPPORT				BIT_ENUM(HID_TYPE_VENDOR)
+		#define EDR_HID_SUPPORT				BIT_ENUM(HID_TYPE_PS4)
+		// #define EDR_TYPE_SUPPORT			(BIT_ENUM(DEV_TYPE_HID))
+		// #define EDR_HID_SUPPORT				BIT_ENUM(HID_TYPE_VENDOR)
 		// #define BLE_TYPE_SUPPORT			(BIT_ENUM(DEV_TYPE_HID) | BIT_ENUM(DEV_TYPE_VENDOR))
 		// #define BLE_HID_SUPPORT			BIT_ENUM(HID_TYPE_XBOX)
 		#define EDR_ICON					BD_CLASS_GAMEPAD
@@ -169,6 +172,7 @@ extern "C" {
 		#define SW_VERSION                     		0x0200
         #define DEFAULT_NAME			       		"gamepad_demo"
         #define DEFAULT_MODEL						"GP_demo"
+		#define CONFIG_VID                          GPD
 	
 	#elif KMFC
 		#define APP_KEY_ENABLE						1
@@ -199,6 +203,7 @@ extern "C" {
 		#define SW_VERSION                  		0x0100
         #define DEFAULT_NAME			    		"km_for_consoles"
         #define DEFAULT_MODEL						"KMFC"
+		#define CONFIG_VID                          KMFC
 	#elif KMFCS
 		#define APP_KEY_ENABLE						1
 		#define APP_LED_ENABLE						1
@@ -225,6 +230,7 @@ extern "C" {
 		#define SW_VERSION                  		0x0100
         #define DEFAULT_NAME			    		"km_for_consoless"
         #define DEFAULT_MODEL						"KMFCS"
+		#define CONFIG_VID                          KMFS
 	#endif
 #endif
 
@@ -256,7 +262,7 @@ extern "C" {
 #define TCFG_AUDIO_DAC_CONNECT_MODE         DAC_OUTPUT_MONO_LR_DIFF
 #endif
 #ifndef CONFIG_FLASH_SIZE
-#define CONFIG_FLASH_SIZE                   FLASH_SIZE_2M    /*配置FLASH大小*/
+#define CONFIG_FLASH_SIZE                   FLASH_SIZE_1M    /*配置FLASH大小*/
 #endif
 
 
@@ -302,7 +308,9 @@ extern "C" {
 #define CONFIG_BT_SM_SUPPORT_ENABLE        	0
 #endif
 #if BT0_SUPPORT & (BIT_ENUM(TR_BLEC) | BIT_ENUM(TR_BLE_RFC))
-#define CONFIG_BT_GATT_CLIENT_NUM          	1 /*配置主机client个数*/
+#define CONFIG_BT_GATT_CLIENT_NUM          	1 	/*配置主机client个数*/
+#define CLIENT_PAIR_BOND_ENABLE    			1	/*2.4g模式强制支持配对*/	
+#define SUPPORT_TEST_BOX_BLE_MASTER_TEST_EN		1	/*默认打开蓝牙测试盒使能*/
 #else
 #define CONFIG_BT_GATT_CLIENT_NUM        	0
 #endif

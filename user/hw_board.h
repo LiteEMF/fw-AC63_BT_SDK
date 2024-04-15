@@ -189,7 +189,9 @@ extern "C" {
 #endif
 
 
-
+#ifndef BAT_R		//(R1+R2)/R1, do not used bracket
+#define	BAT_R     	4/1
+#endif
 
 #ifdef __cplusplus
 }

@@ -52,9 +52,11 @@ struct spi_platform_data {
     u32 clk;  //波特率
 };
 
+#ifndef HW_SPI_HOST_MAP
 extern const struct spi_platform_data spi0_p_data;
 extern const struct spi_platform_data spi1_p_data;
 extern const struct spi_platform_data spi2_p_data;
+#endif
 
 typedef const int spi_dev;
 

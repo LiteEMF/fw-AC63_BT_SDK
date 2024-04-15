@@ -79,15 +79,48 @@ static u32 check_ota_mode()
         #if RCSP_UPDATE_EN
         if (get_jl_rcsp_update_status()) {
             r_printf("OTA ing");
-            set_run_mode(OTA_MODE);
             usb_sie_close_all();//关闭usb
-            JL_UART1->CON0 = BIT(13) | BIT(12) | BIT(10);//关闭串口
             return 1;
         }
         #endif
     }
     return 0;
 }
+
+
+
+
+
+error_t os_post_buf_msg(uint32_t evt,uint8_t* buffer,uint16_t length)	//如果使用os,并且需要发送消息通知任务开启时使用
+{
+	uint8_t* p;
+	uint8_t err;
+    uint32_t event;
+	if(0 == length) return ERROR_LENGTH;
+
+	p = emf_malloc(length);
+	if(NULL != p){
+		memcpy(p,buffer, length);
+	}
+    event = evt;
+	err = os_taskq_post_msg(TASK_NAME, 3, event, p, length);
+	if(err){
+		emf_free(p);
+		logd("msg event %x err=%d\n",event,err);
+		return ERROR_NO_MEM;
+	}
+
+	return ERROR_SUCCESS;
+}
+
+#if API_BT_ENABLE
+error_t os_bt_rx(uint8_t id, bt_t bt, bt_evt_rx_t* pa)	
+{
+    return os_post_buf_msg(BT_REC_DATA_EVENT | U32(0,id,bt,pa->bts), pa->buf, pa->len);
+}
+#endif
+
+
 /*******************************************************************
 ** Parameters:		
 ** Returns:	
@@ -112,7 +145,7 @@ static void emf_task_handle(void *arg)
             case HEARTBEAT_EVENT:
                 heartbeat_msg_cnt = 0;
                 m_task_tick10us +=100;      //同步任务tick时钟
-                emf_handler(0);
+                emf_handler(100);
 
                 #if API_USBD_BIT_ENABLE     //无线升级时候关闭usb
                 if (check_ota_mode()) {
@@ -122,8 +155,17 @@ static void emf_task_handle(void *arg)
                 break;
             case UART_RX_EVENT:
                 break;
-            case BT_REC_DATA_EVENT:
+            case BT_REC_DATA_EVENT:{
+                uint8_t id; bt_t bt; bt_evt_rx_t pa;
+                id = (msg[1] >> 16) & 0XFF;
+                bt = (msg[1] >> 8) & 0XFF;
+                pa.bts = (msg[1] >> 0) & 0XFF;
+                pa.buf = msg[2];
+                pa.len = msg[3];
+                api_bt_rx(id, bt, &pa);
+                emf_free(pa.buf);               //must free
                 break;
+            }
             default:
                 break;
         }
@@ -187,10 +229,6 @@ static void liteemf_app_start()
 
     emf_api_init();
     emf_init();
-
-    #if BT_ENABLE
-    api_bt_init();
-    #endif
 
     logd("start end\n");
     os_task_create(emf_task_handle,NULL,2,2048,512,"emf_task");

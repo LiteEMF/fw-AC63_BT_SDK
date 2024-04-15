@@ -145,7 +145,7 @@ bool app_command_vendor_decode(trp_handle_t *phandle,uint8_t* buf,uint16_t len)
 	return true;
 }
 
-void user_vender_handler(void)
+void user_vender_handler(uint32_t period_10us)
 {
 	uint8_t i;
     static timer_t timer;

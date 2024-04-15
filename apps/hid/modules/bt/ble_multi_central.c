@@ -121,12 +121,12 @@ static const target_uuid_t  jl_multi_search_uuid_table[] = {
         #ifdef BTC_SEARCH_UUID16
         .services_uuid16 = BTC_SEARCH_UUID16,
         #else
-        .services_uuid16 = 0xae30,
+        .services_uuid16 = 0xae40,
         #endif
         #ifdef BTC_SEARCH_WRITE_CHARA_UUID16
         .characteristic_uuid16 = BTC_SEARCH_WRITE_CHARA_UUID16,
         #else
-        .characteristic_uuid16 = 0xae01,
+        .characteristic_uuid16 = 0xae41,
         #endif
         .opt_type = ATT_PROPERTY_WRITE_WITHOUT_RESPONSE,
     },
@@ -135,12 +135,12 @@ static const target_uuid_t  jl_multi_search_uuid_table[] = {
         #ifdef BTC_SEARCH_UUID16
         .services_uuid16 = BTC_SEARCH_UUID16,
         #else
-        .services_uuid16 = 0xae30,
+        .services_uuid16 = 0xae40,
         #endif
         #ifdef BTC_SEARCH_NOTIFY_CHARA_UUID16
         .characteristic_uuid16 = BTC_SEARCH_NOTIFY_CHARA_UUID16,
         #else
-        .characteristic_uuid16 = 0xae02,
+        .characteristic_uuid16 = 0xae42,
         #endif
         .opt_type = ATT_PROPERTY_NOTIFY,
     },
@@ -205,7 +205,7 @@ bool multi_client_user_server_write(uint8_t *packet, uint16_t size)
 static const gatt_search_cfg_t multil_client_search_config = {
     .match_devices = multi_match_device_table,
     .match_devices_count = (sizeof(multi_match_device_table) / sizeof(client_match_cfg_t)),
-    #ifdef BTC_RSSI_LEVEL           //cesar add
+    #ifdef BTC_RSSI_LEVEL           //lietemf add
     .match_rssi_enable = 1,
     .match_rssi_value = BTC_RSSI_DEFAULT_LEVEL;
     #else
@@ -221,7 +221,7 @@ static const gatt_search_cfg_t multil_client_search_config = {
 static gatt_search_cfg_t multil_client_bond_config = {
     .match_devices = NULL,
     .match_devices_count = 0,
-    #ifdef BTC_RSSI_LEVEL           //cesar add
+    #ifdef BTC_RSSI_LEVEL           //lietemf add
     .match_rssi_enable = 1,
     .match_rssi_value = BTC_RSSI_DEFAULT_LEVEL;
     #else
@@ -405,8 +405,8 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
                 evt.bts = BT_UART;
                 evt.buf = report_data->blob;
                 evt.len = report_data->blob_length;
-                if(m_trps & BT0_SUPPORT & BIT(BT_BLEC_RF)){
-                    api_bt_event(BT_ID0,BT_BLEC_RF,BT_EVT_RX,&evt);    
+                if(m_trps & BT0_SUPPORT & BIT(BT_BLE_RFC)){
+                    api_bt_event(BT_ID0,BT_BLE_RFC,BT_EVT_RX,&evt);    
                 }else{
                     api_bt_event(BT_ID0,BT_BLEC,BT_EVT_RX,&evt);   
                 }
@@ -454,8 +454,8 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
         bt_evt_con_t evt;
         memcpy(evt.mac, cur_conn_info.peer_address_info, 6);
 	    evt.name[0] = 0;
-        if(m_trps & BT0_SUPPORT & BIT(BT_BLEC_RF)){
-            api_bt_event(BT_ID0,BT_BLEC_RF,BT_EVT_CONNECTED,NULL); 
+        if(m_trps & BT0_SUPPORT & BIT(BT_BLE_RFC)){
+            api_bt_event(BT_ID0,BT_BLE_RFC,BT_EVT_CONNECTED,NULL); 
 
             cur_conn_info.head_tag = CLIENT_PAIR_BOND_TAG;
             cur_conn_info.pair_flag = 1;
@@ -469,8 +469,8 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
     case GATT_COMM_EVENT_DISCONNECT_COMPLETE:
         log_info("disconnect_handle:%04x,reason= %02x\n", little_endian_read_16(packet, 0), packet[2]);
         #ifdef LITEEMF_ENABLED
-        if(m_trps & BT0_SUPPORT & BIT(BT_BLEC_RF)){
-            api_bt_event(BT_ID0,BT_BLEC_RF,BT_EVT_DISCONNECTED,NULL); 
+        if(m_trps & BT0_SUPPORT & BIT(BT_BLE_RFC)){
+            api_bt_event(BT_ID0,BT_BLE_RFC,BT_EVT_DISCONNECTED,NULL); 
         }else{
             api_bt_event(BT_ID0,BT_BLEC,BT_EVT_DISCONNECTED,NULL);   
         }
@@ -574,20 +574,29 @@ static int multi_client_event_packet_handler(int event, u8 *packet, u16 size, u8
         log_info("match:server_uuid= %04x,charactc_uuid= %04x,value_handle= %04x\n", \
                  opt_hdl->search_uuid->services_uuid16, opt_hdl->search_uuid->characteristic_uuid16, opt_hdl->value_handle);
 
-        if (opt_hdl->search_uuid->characteristic_uuid16 == 0xae01) {
+        #ifdef BTC_SEARCH_WRITE_CHARA_UUID16
+        if (opt_hdl->search_uuid->characteristic_uuid16 == BTC_SEARCH_WRITE_CHARA_UUID16) {
+        #else
+        if (opt_hdl->search_uuid->characteristic_uuid16 == 0xae41) {
+        #endif
             multi_ble_client_write_handle = opt_hdl->value_handle;
             log_info("get write handle:0x%x\n", multi_ble_client_write_handle);
         }
-		if (opt_hdl->search_uuid->characteristic_uuid16 == 0xae02) {
+
+        #ifdef BTC_SEARCH_NOTIFY_CHARA_UUID16
+        if (opt_hdl->search_uuid->characteristic_uuid16 == BTC_SEARCH_NOTIFY_CHARA_UUID16) {
+        #else
+        if (opt_hdl->search_uuid->characteristic_uuid16 == 0xae42) {
+        #endif
             multi_ble_client_notify_handle = opt_hdl->value_handle;
             log_info("get read handle:0x%x\n", multi_ble_client_notify_handle);
             #ifdef LITEEMF_ENABLED
             bt_evt_ready_t evt;
             evt.bts = BT_UART;
             evt.ready = true;
-            if(m_trps & BT0_SUPPORT & BIT(BT_BLEC_RF)){
+            if(m_trps & BT0_SUPPORT & BIT(BT_BLE_RFC)){
             evt.bts = BT_UART;
-                api_bt_event(BT_ID0,BT_BLEC_RF,BT_EVT_READY,&evt);    
+                api_bt_event(BT_ID0,BT_BLE_RFC,BT_EVT_READY,&evt);    
             }else{
                 api_bt_event(BT_ID0,BT_BLEC,BT_EVT_READY,&evt);   
             }

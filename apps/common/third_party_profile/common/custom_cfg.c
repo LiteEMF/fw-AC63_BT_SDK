@@ -1180,6 +1180,11 @@ static u32 ex_cfg_fill_content(ex_cfg_t *user_ex_cfg, u8 *write_flag)
                 if (*(item_data + 1) == 0x09) {         //find HCI_EIR_DATATYPE_COMPLETE_LOCAL_NAME:0x09
                     memcpy(rsp_data, item_data, *item_data + 1);
                     rsp_len = *item_data + 1;
+                    if (rsp_len + sizeof(struct excfg_rsp_payload) + 2 > 31) {  //限制名称长度防止下面make rsp数据溢出
+                        rsp_len = 31 - (sizeof(struct excfg_rsp_payload) + 2);
+                        rsp_data[0] = rsp_len - 1;
+                        cfg_printf("rsp data fix!!!%d %d\n",rsp_len,sizeof(struct excfg_rsp_payload)+2);
+                    }
                     break;
                 }
                 i += (1 + *item_data);

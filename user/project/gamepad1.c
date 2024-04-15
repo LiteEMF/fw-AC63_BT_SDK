@@ -161,7 +161,7 @@ void user_vender_deinit(void)			//关机前deinit
 {
 }
 
-void user_vender_handler(void)
+void user_vender_handler(uint32_t period_10us)
 {
     static timer_t timer;
 

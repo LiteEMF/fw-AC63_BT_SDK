@@ -140,15 +140,17 @@ const int config_delete_link_key          = 1;
 #if TCFG_USER_BLE_ENABLE
 /*
 **从机:
-    选择物理层这里3选1, 如果选择CONN_SET_CODED_PHY时 SELECT_CODED_S2_OR_S8 才有效
-    #define  SELECT_PHY                 CONN_SET_1M_PHY//1M:CONN_SET_1M_PHY 2M:CONN_SET_2M_PHY CODED:CONN_SET_CODED_PHY
-    选择CODED类型:S2 or S8
-    #define  SELECT_CODED_S2_OR_S8      CONN_SET_PHY_OPTIONS_S2//S2:CONN_SET_PHY_OPTIONS_S2 S8:CONN_SET_PHY_OPTIONS_S8      
+    选择CONN_SET_CODED_PHY时 SELECT_CODED_S2_OR_S8 才有效
 **主机:
-    #define SET_SELECT_PHY_CFG   LE_2M_PHY|LE_CODED_PHY    主机开启LE_2M_PHY支持(开启2M后主机主动断开连接有问题), 为什么要LE_CODED_PHY就不清楚
+    #define SET_SELECT_PHY_CFG   LE_2M_PHY|LE_CODED_PHY    主机开启LE_2M_PHY支持(开启2M后主机主动断开连接有问题)
 */
 
-#define SET_SELECT_PHY_CFG   0
+#if CONFIG_APP_CONN_24G || (defined LITEEMF_ENABLED && (BT0_SUPPORT & (BIT_ENUM(TR_BLE_RF) | BIT_ENUM(TR_BLE_RFC))))
+#define SET_SELECT_PHY_CFG   LE_2M_PHY|LE_CODED_PHY
+#else
+#define SET_SELECT_PHY_CFG   0          /*0默认为1M PHY*/
+#endif
+
 
 #if CONFIG_BT_SM_SUPPORT_ENABLE
 #define SET_ENCRYPTION_CFG   LE_ENCRYPTION

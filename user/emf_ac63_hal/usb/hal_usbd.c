@@ -77,6 +77,7 @@ void usb_isr(const usb_dev id)
         u32 reg = usb_read_power(id);
         usb_write_power(id, (reg | INTRUSB_SUSPEND | INTRUSB_RESUME));//enable suspend resume
         usbd_reset_event(id);
+        setup_phase = 1;
     }
     if (intr_usb & INTRUSB_RESUME) {
         usbd_resume_event(id);
@@ -487,7 +488,7 @@ error_t hal_usbd_out(uint8_t id, uint8_t ep, uint8_t* buf, uint16_t* plen)
 error_t hal_usbd_reset(uint8_t id)
 {
 	hal_usbd_deinit(id);
-    delay_ms(1);		//usd while(1) delay
+    api_delay_ms(1);		//usd while(1) delay
 	hal_usbd_init(id);
 
 	return ERROR_SUCCESS;

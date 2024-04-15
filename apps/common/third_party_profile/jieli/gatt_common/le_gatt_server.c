@@ -43,6 +43,12 @@
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
+#ifdef LITEEMF_ENABLED
+#include  "app/gamepad/app_gamepad.h"
+#include "api/bt/api_bt.h"
+#include "api/api_log.h"
+#endif
+
 #if TCFG_USER_BLE_ENABLE && CONFIG_BT_GATT_COMMON_ENABLE
 
 /* #ifdef log_info */
@@ -872,6 +878,7 @@ int ble_gatt_server_characteristic_ccc_set(u16 conn_handle, u16 att_ccc_handle, 
 {
     multi_att_set_ccc_config(conn_handle, att_ccc_handle, ccc_config);
     if (BLE_ST_NOTIFY_IDICATE != ble_comm_dev_get_handle_state(conn_handle, GATT_ROLE_SERVER)) {
+        printf("send BLE_ST_NOTIFY_IDICATE");
         ble_comm_dev_set_handle_state(conn_handle, GATT_ROLE_SERVER, BLE_ST_NOTIFY_IDICATE);
         __gatt_server_set_work_state(conn_handle, BLE_ST_NOTIFY_IDICATE, 1);
     }
@@ -880,6 +887,30 @@ int ble_gatt_server_characteristic_ccc_set(u16 conn_handle, u16 att_ccc_handle, 
     if (SUPPORT_MAX_GATT_SERVER > 1) {
         __gatt_server_check_auto_adv();
     }
+
+
+    #ifdef LITEEMF_ENABLED
+    bt_t bt;
+    if(m_trps & BT0_SUPPORT & BIT(BT_BLE_RF)){
+        bt = BT_BLE_RF;
+    }else{
+        bt = BT_BLE;
+    }
+    bt_evt_ready_t evt;
+    logd("emf process:BLE_ST_NOTIFY_IDICATE");
+    if(is_ble_notify_open(false)){
+        evt.bts = BT_UART;
+        evt.ready = true;
+        api_bt_event(BT_ID0,bt,BT_EVT_READY,&evt);
+    }
+    if(is_ble_notify_open(true)){
+        evt.bts = BT_HID;
+        evt.ready = true;
+        api_bt_event(BT_ID0,bt,BT_EVT_READY,&evt);
+    }
+    #endif
+
+    
     return GATT_OP_RET_SUCESS;
 }
 

@@ -151,7 +151,20 @@
 		"app_joystick.h": "c",
 		"api_pm.h": "c",
 		"api_storage.h": "c",
-		"spp_trans.h": "c"
+		"spp_trans.h": "c",
+		"app_key.h": "c",
+		"api_flash.h": "c",
+		"app_imu.h": "c",
+		"api_soft_timer.h": "c",
+		"crc_poly.h": "c",
+		"crc.h": "c",
+		"btstack_typedef.h": "c",
+		"multitouch.h": "c",
+		"ios_simulate_touch.h": "c",
+		"mt.h": "c",
+		"template.h": "c",
+		"mt_function.h": "c"
 	},
-	"cmake.sourceDirectory": "D:/work/git/github/fw-AC63_BT_SDK/user/LiteEMF/api/gps"
+	"cmake.sourceDirectory": "D:/work/git/github/fw-AC63_BT_SDK/user/LiteEMF/api/gps",
+	"C_Cpp.errorSquiggles": "disabled"
 }

@@ -566,13 +566,21 @@ struct port_wakeup ldoin_port = {
     .filter             = PORT_FLT_16ms,
     .iomap              = IO_LDOIN_DET,                      //唤醒口选择
 };
-#elif defined KEY_USB_DET_GPIO              //适配外部充电
+#elif defined KEY_USB_DET_GPIO && (PIN_NULL != KEY_USB_DET_GPIO)              //适配外部充电
 struct port_wakeup usbdet_port = {
 	.pullup_down_enable     = DISABLE,                          //配置I/O 内部上下拉是否使能
 	.edge                   = RISING_EDGE,                      //唤醒方式选择,可选：上升沿\下降沿
 	.both_edge              = DISABLE,                          //保留参数
 	.filter                 = PORT_FLT_16ms,
     .iomap                  = KEY_USB_DET_GPIO,       			 //唤醒口选择
+};
+#elif defined KEY_CHARGER_GPIO && (PIN_NULL != KEY_CHARGER_GPIO)
+static struct port_wakeup chargedet_port = {
+    .pullup_down_enable     = ENABLE,                          //配置I/O 内部上下拉是否使能
+	.edge                   = FALLING_EDGE,                     //唤醒方式选择,可选：上升沿\下降沿
+	.both_edge              = DISABLE,                          //保留参数
+	.filter                 = PORT_FLT_16ms,
+    .iomap                  = KEY_CHARGER_GPIO,       			 //唤醒口选择
 };
 #endif
 
@@ -594,6 +602,8 @@ const struct wakeup_param wk_param = {
     .aport[2] = &ldoin_port,
 #elif defined KEY_USB_DET_GPIO && (PIN_NULL != KEY_USB_DET_GPIO)
     .port[2] = &usbdet_port,
+#elif defined KEY_CHARGER_GPIO && (PIN_NULL != KEY_CHARGER_GPIO)
+    .port[2] = &chargedet_port,
 #endif
 
 };

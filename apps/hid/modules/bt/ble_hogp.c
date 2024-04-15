@@ -170,8 +170,16 @@ static const u8 System_ID[] = {0, 0, 0, 0, 0, 0, 0, 0};
 
 //定义的产品信息,for test
 #define  PNP_VID_SOURCE   0x02
-#define  PNP_VID          0x05ac //0x05d6
-#define  PNP_PID          0x022C //
+#ifdef  BLE_VID
+#define  PNP_VID          BLE_VID
+#else
+#define  PNP_VID          0x05ac /* 尽量不要使用苹果的VID, 复合MT设备会有问题 0x05d6*/
+#endif
+#ifdef  BLE_PID
+#define  PNP_PID          BLE_PID
+#else
+#define  PNP_PID          0x022C
+#endif
 #define  PNP_PID_VERSION  0x011b //1.1.11
 
 static u8 PnP_ID[] = {PNP_VID_SOURCE, PNP_VID & 0xFF, PNP_VID >> 8, PNP_PID & 0xFF, PNP_PID >> 8, PNP_PID_VERSION & 0xFF, PNP_PID_VERSION >> 8};
@@ -199,11 +207,11 @@ static u32 hid_battery_level_add_cnt;/*电量采集次数*/
 static u16 hid_battery_notify_timer_id;
 
 static u8(*get_vbat_percent_call)(void) = NULL;
-static void (*le_hogp_output_callback)(u8 *buffer, u16 size) = NULL;
+static void (*le_hogp_output_callback)(u8 id, u8 *buffer, u16 size) = NULL;
 //------------------------------------------------------
 static void __hogp_resume_all_ccc_enable(u8 update_request);
 static void __check_report_map_change(void);
-void ble_hid_transfer_channel_recieve(u8 *packet, u16 size);
+void ble_hid_transfer_channel_recieve(uint8_t server, u8 *packet, u16 size);
 void ble_hid_transfer_channel_recieve1(u8 *packet, u16 size);
 static uint16_t hogp_att_read_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
 static int hogp_att_write_callback(hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
@@ -525,20 +533,23 @@ static int hogp_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_pa
         if (little_endian_read_16(ext_param, 14 + 2)) {
             ble_op_latency_skip(hogp_con_handle, LATENCY_SKIP_INTERVAL_KEEP); //
         }
-		
-		if (m_trps & BT0_SUPPORT & BIT(BT_BLE_RF) && hogp_server_adv_config.adv_type == ADV_IND){
+
+		#ifdef LITEEMF_ENABLED
+		if ((m_trps & BT0_SUPPORT & BIT(BT_BLE_RF)) && hogp_server_adv_config.adv_type == ADV_IND){
             //保存配对信息
             memcpy(&hogp_pair_info.peer_address_info, cur_peer_addr_info, 7);
             hogp_pair_info.pair_flag = 1;
             __hogp_conn_pair_vm_do(&hogp_pair_info, 1);
             __ble_state_to_user(BLE_PRIV_PAIR_ENCRYPTION_CHANGE, first_pair_flag);
         }
+        #endif
         break;
 
     case GATT_COMM_EVENT_DISCONNECT_COMPLETE:
         log_info("disconnect_handle:%04x,reason= %02x\n", little_endian_read_16(packet, 0), packet[2]);
         hogp_con_handle = 0;
 
+        #ifdef LITEEMF_ENABLED
         if(m_trps & BT0_SUPPORT & BIT(BT_BLE_RF)){
             if(hogp_pair_info.pair_flag){
                 extern void hogp_reconnect_adv_config_set(u8 adv_type, u32 adv_timeout);
@@ -546,7 +557,9 @@ static int hogp_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_pa
             }else{
                 hogp_adv_config_set(); //解决解绑后立马又被连上的问题
             }
-        }else{
+        }else
+        #endif
+        {
             if (8 == packet[2] && hogp_pair_info.pair_flag) {
                 //超时断开,有配对发定向广播, 由于adv_auto_do打开了,这里需要提前设置广播类型
                 hogp_pair_info.direct_adv_cnt = REPEAT_DIRECT_ADV_COUNT;
@@ -600,7 +613,7 @@ static int hogp_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_pa
             bt_ctbp = api_bt_get_ctb(BT_BLE);
         }
         if(NULL != bt_ctbp){
-            bt_ctbp->inteval_10us = 125 * little_endian_read_16(ext_param, 14 + 0);
+            bt_ctbp->inteval_10us = 125 * little_endian_read_16(ext_param, 6 + 0);
         }
         logi_y("update:interval, latency, timout = %d ms, %d, %d ms\n", little_endian_read_16(ext_param, 6 + 0)*125/100, little_endian_read_16(ext_param, 6 + 2), little_endian_read_16(ext_param, 6 + 4)*10);
         #endif
@@ -614,7 +627,7 @@ static int hogp_event_packet_handler(int event, u8 *packet, u16 size, u8 *ext_pa
 
 
     case GATT_COMM_EVENT_DIRECT_ADV_TIMEOUT:
-        log_info("DIRECT_ADV_TIMEOUT\n");
+        log_info("DIRECT_ADV_TIMEOUT=%d\n",hogp_pair_info.direct_adv_cnt);
         if (hogp_pair_info.direct_adv_cnt) {
             hogp_pair_info.direct_adv_cnt--;
         }
@@ -919,7 +932,7 @@ static int hogp_att_write_callback(hci_con_handle_t connection_handle, uint16_t 
 
     u16 handle = att_handle;
 
-    log_info("write_callback, handle= 0x%04x,size = %d\n", handle, buffer_size);
+    // log_info("write_callback, handle= 0x%04x,size = %d\n", handle, buffer_size);
 
     switch (handle) {
 
@@ -927,9 +940,21 @@ static int hogp_att_write_callback(hci_con_handle_t connection_handle, uint16_t 
         break;
 
     case ATT_CHARACTERISTIC_2a4d_03_VALUE_HANDLE:
+        put_buf(buffer, buffer_size);           //马达震动状态
+        if (le_hogp_output_callback) {
+            le_hogp_output_callback(1, buffer, buffer_size);
+        }
+        break;
+    case ATT_CHARACTERISTIC_2a4d_08_VALUE_HANDLE:
         put_buf(buffer, buffer_size);           //键盘led灯状态
         if (le_hogp_output_callback) {
-            le_hogp_output_callback(buffer, buffer_size);
+            le_hogp_output_callback(2, buffer, buffer_size);
+        }
+        break;
+    case ATT_CHARACTERISTIC_2a4d_09_VALUE_HANDLE:
+        put_buf(buffer, buffer_size);           //键盘led灯状态
+        if (le_hogp_output_callback) {
+            le_hogp_output_callback(3, buffer, buffer_size);
         }
         break;
 
@@ -985,7 +1010,7 @@ static int hogp_att_write_callback(hci_con_handle_t connection_handle, uint16_t 
 #endif
 
     case ATT_CHARACTERISTIC_ae41_01_VALUE_HANDLE:
-        ble_hid_transfer_channel_recieve(buffer, buffer_size);
+        ble_hid_transfer_channel_recieve(0, buffer, buffer_size);
         break;
     #ifdef ATT_CHARACTERISTIC_ae10_01_VALUE_HANDLE
     case ATT_CHARACTERISTIC_ae10_01_VALUE_HANDLE:
@@ -1022,15 +1047,38 @@ static int hogp_att_write_callback(hci_con_handle_t connection_handle, uint16_t 
  *  \note
  */
 /*************************************************************************************************/
-static u8  adv_name_ok;   //name 优先存放在ADV包
+static u8  adv_name_ok = 0;   //name 优先存放在ADV包
 static int hogp_make_set_adv_data(u8 adv_reconnect)
 {
     u8 offset = 0;
     u8 *buf = hogp_adv_data;
 
-    offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_FLAGS, FLAGS_GENERAL_DISCOVERABLE_MODE | FLAGS_EDR_NOT_SUPPORTED, 1);
-    offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_COMPLETE_16BIT_SERVICE_UUIDS, HID_UUID_16, 2);
-    offset += make_eir_packet_data(&buf[offset], offset, HCI_EIR_DATATYPE_APPEARANCE_DATA, Appearance, 2);
+    #if defined LITEEMF_ENABLED && CONFIG_APP_LITEEMF
+        u8 Manufacturer_data[20];
+        u8  manu_len =  2 + MIN(sizeof(Manufacturer_data)-2,sizeof(DEFAULT_MODEL)-1);
+        Manufacturer_data[0] = 0xff;     //BLE_MANUFACTURER_COMPANY;
+        Manufacturer_data[1] = 0xf1;       //BLE_MANUFACTURER_COMPANY >> 8;
+        memcpy(Manufacturer_data+2,DEFAULT_MODEL,manu_len - 2);
+
+        #if (BT_SUPPORT & BIT_ENUM(TR_BLE))
+        if(!m_ble_adv_discoverable){
+            offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_FLAGS, FLAGS_EDR_NOT_SUPPORTED, 1);
+        }else
+        #endif
+        {
+            offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_FLAGS, FLAGS_GENERAL_DISCOVERABLE_MODE | FLAGS_EDR_NOT_SUPPORTED, 1);
+        }
+ 
+        #if defined BLE_HID_SUPPORT && BLE_HID_SUPPORT
+        offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_COMPLETE_16BIT_SERVICE_UUIDS, HID_UUID_16, 2);
+        offset += make_eir_packet_data(&buf[offset], offset, HCI_EIR_DATATYPE_APPEARANCE_DATA, Appearance, 2);
+        #endif
+        offset += make_eir_packet_data(&buf[offset], offset, HCI_EIR_DATATYPE_MANUFACTURER_SPECIFIC_DATA, (void *)Manufacturer_data, manu_len);
+	#else
+        offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_FLAGS, FLAGS_GENERAL_DISCOVERABLE_MODE | FLAGS_EDR_NOT_SUPPORTED, 1);
+        offset += make_eir_packet_val(&buf[offset], offset, HCI_EIR_DATATYPE_COMPLETE_16BIT_SERVICE_UUIDS, HID_UUID_16, 2);
+        offset += make_eir_packet_data(&buf[offset], offset, HCI_EIR_DATATYPE_APPEARANCE_DATA, Appearance, 2);
+    #endif
 
     if (!adv_reconnect) {/*回连广播默认不填入名字*/
         char *gap_name = ble_comm_get_gap_name();
@@ -1071,7 +1119,7 @@ static int hogp_make_set_rsp_data(u8 adv_reconnect)
     u8 offset = 0;
     u8 *buf = hogp_scan_rsp_data;
 
-#if RCSP_BTMATE_EN
+#if RCSP_BTMATE_EN && (!defined LITEEMF_ENABLED || !CONFIG_APP_LITEEMF)
     u8  tag_len = sizeof(user_tag_string);
     offset += make_eir_packet_data(&buf[offset], offset, HCI_EIR_DATATYPE_MANUFACTURER_SPECIFIC_DATA, (void *)user_tag_string, tag_len);
 #endif
@@ -1475,6 +1523,21 @@ const gatt_server_cfg_t mul_server_init_cfg = {
 };
 void multi_server_init(void)
 {
+    log_info("%s\n", __FUNCTION__);
+    log_info("ble_file: %s", __FILE__);
+
+    hogp_con_handle = 0;
+    __hogp_conn_pair_vm_do(&hogp_pair_info, 0);
+    if (hogp_pair_info.pair_flag) {
+        hogp_pair_info.direct_adv_cnt = REPEAT_DIRECT_ADV_COUNT;
+        #ifdef LITEEMF_ENABLED
+        if(m_trps & BT0_SUPPORT & BIT(BT_BLE_RF)){
+            le_hogp_set_reconnect_adv_cfg(ADV_DIRECT_IND_LOW, 0);
+            hogp_adv_config_set();
+        }
+        #endif
+    }
+    
     hogp_server_init();
 }
 //server exit
@@ -1883,7 +1946,7 @@ int ble_hid_transfer_channel_send1(u8 *packet, u16 size)
  *  \note
  */
 /*************************************************************************************************/
-void __attribute__((weak)) ble_hid_transfer_channel_recieve(u8 *packet, u16 size)
+void __attribute__((weak)) ble_hid_transfer_channel_recieve(uint8_t server, u8 *packet, u16 size)
 {
     log_info("transfer_rx(%d):", size);
     log_info_hexdump(packet, size);

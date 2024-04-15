@@ -14,7 +14,7 @@
 ************************************************************************************************************/
 #include "hw_config.h"
 #include "hw_board.h"
-#ifdef HW_SPI_HOST_MAP
+#ifdef HW_SPI_HOST_MAP  && !SPI_SOFT_ENABLE
 
 #include  "api/api_spi_host.h"
 #include  "api/api_gpio.h"

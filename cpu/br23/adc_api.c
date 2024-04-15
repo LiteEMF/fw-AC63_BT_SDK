@@ -348,7 +348,7 @@ u32 adc_sample(u32 ch)
 }
 
 
-#define     VBG_VBAT_SCAN_CNT               10000
+#define     VBG_VBAT_SCAN_CNT               10
 #define     VBG_VBAT_SCAN_CNT_FOR_CHARGE    100
 
 void adc_scan(void *priv)

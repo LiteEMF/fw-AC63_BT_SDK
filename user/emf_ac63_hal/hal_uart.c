@@ -93,7 +93,7 @@ bool hal_uart_init(uint8_t id,uint32_t baudrate)
     uart_para.rx_pin = m_uart_map[id].rx;
     uart_para.argv = (void*)((uint32_t)id);
     uart_para.baud = baudrate;
-    uart_para.rx_timeout = 4;	//40us (460800 一个字节22us)
+    uart_para.rx_timeout = 10;	//100us (460800 一个字节22us)
     uart_para.isr_cbfun = uart_callback;
     uart_para.rx_cbuf = rx_buf[id];
     uart_para.rx_cbuf_size = UART_CBUF_SIZE;            //uart fifo 长度

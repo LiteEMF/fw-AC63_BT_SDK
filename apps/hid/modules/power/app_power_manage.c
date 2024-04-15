@@ -231,7 +231,7 @@ void vbat_check(void *priv)
 
     cur_battery_level = battery_value_to_phone_level(bat_val);
 
-    printf("bv:%d, bl:%d , check_vbat:%d\n", bat_val, cur_battery_level, adc_check_vbat_lowpower());
+    // printf("bv:%d, bl:%d , check_vbat:%d\n", bat_val, cur_battery_level, adc_check_vbat_lowpower());
 
     unit_cnt++;
 

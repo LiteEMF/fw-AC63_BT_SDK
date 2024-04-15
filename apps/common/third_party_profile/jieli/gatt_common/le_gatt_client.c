@@ -701,8 +701,8 @@ int ble_gatt_client_scan_enable(u32 en)
 
     #ifdef LITEEMF_ENABLED
     bt_t bt;
-    if(m_trps & BT0_SUPPORT & BIT(BT_BLEC_RF)){
-        bt = BT_BLEC_RF;
+    if(m_trps & BT0_SUPPORT & BIT(BT_BLE_RFC)){
+        bt = BT_BLE_RFC;
     }else{
         bt = BT_BLEC;
     }
@@ -919,8 +919,8 @@ just_creat:
 
     #ifdef LITEEMF_ENABLED	
     if(0 == find_remoter){
-        if(m_trps & BT0_SUPPORT & BIT(BT_BLEC_RF)){
-            api_bt_event(BT_ID0,BT_BLEC_RF,BT_EVT_SCAN,&evt);    
+        if(m_trps & BT0_SUPPORT & BIT(BT_BLE_RFC)){
+            api_bt_event(BT_ID0,BT_BLE_RFC,BT_EVT_SCAN,&evt);    
             #if (BT0_SUPPORT & BIT_ENUM(TR_BLE_RFC))
             if(0 == memcmp(ble_rfc_scan_result.mac, report_pt->address,6)){
                 find_remoter = true;         //匹配到设备
@@ -1329,9 +1329,11 @@ void ble_gatt_client_cbk_packet_handler(uint8_t packet_type, uint16_t channel, u
                     if (config_btctler_le_features & LE_DATA_PACKET_LENGTH_EXTENSION) {
                         log_info(">>>>>>>>s1--request DLE, %04x\n", tmp_val[0]);
                         ble_comm_set_connection_data_length(tmp_val[0], config_btctler_le_acl_packet_length, 2120);
+                    #ifndef LITEEMF_ENABLED
                     } else if (config_btctler_le_features & LE_2M_PHY) {
                         log_info(">>>>>>>>s1--request 2M, %04x\n", tmp_val[0]);
                         ble_comm_set_connection_data_phy(tmp_val[0], CONN_SET_2M_PHY, CONN_SET_2M_PHY, CONN_SET_PHY_OPTIONS_NONE);
+                    #endif
                     }
                 }
             }
